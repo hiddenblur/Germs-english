@@ -1,23 +1,8 @@
 {
  "SCE.S:59008": "...You find yourself thinking:\n\"This place is like the bottom\nof a deep sea.\"\nAnd little by little, you rise\nout of the sea of unconscious.\n...You were born in the City.\nWhen you were young, the City\nwas full of life. But one day,\nthe City suddenly changed, and\nafter high school, you left it.\nAfter university, you became a\nreporter for a local paper.\n...Decades passed, and now you\nhave returned to the City of\nyour youth. ...You come to.\n5 a.m., after an all-nighter\nwith your young assistant.\nThis day will be remembered\nas the day it all began.",
- "SCE.S:5A9A8": {
-  "text": " Desk         {3}○",
-  "width": "full"
- },
- "SCE.S:5AAA0": {
-  "text": " Sofa         {3}○",
-  "width": "full"
- },
- "SCE.S:5AB9C": {
-  "text": " Exit         {3}○",
-  "width": "full"
- },
- "SCE.S:5B180": {
-  "text": " Menu         {3}○",
-  "width": "full"
- },
- "SCE.S:5B128": {
-  "text": " Busy today?\n Need help?",
-  "width": "full"
- }
+ "SCE.S:5A9A8": "{20}Desk work{20}{20}{20}{20}{20}{20}{20}{20} {3}○",
+ "SCE.S:5AAA0": "{20}Sit on sofa{20}{20}{20}{20}{20}{20}{20} {3}○",
+ "SCE.S:5AB9C": "{20}Leave room{20}{20}{20}{20}{20}{20}{20}{20}{3}○",
+ "SCE.S:5B180": "{20}Show menu{20}{20}{20}{20}{20}{20}{20}{20} {3}○",
+ "SCE.S:5B128": " Busy with a story today?\n Is there anything you need?"
 }

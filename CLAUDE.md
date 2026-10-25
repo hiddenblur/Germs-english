@@ -42,8 +42,11 @@ the original, so SCE.S must not grow (the inserter prints its sector delta).
 - Record new findings (addresses, formats) in `docs/` as they are confirmed, and mark anything unconfirmed.
 - Python 3 standard library plus `capstone` (disassembly), `keystone-engine` (assembling EXE patches)
   and `unicorn` (running patched code in tests). Debug in PCSX-Redux or DuckStation.
-- Translation values are half-width by default; use `{"text": ..., "width": "full"}` for text drawn
-  by a renderer that isn't patched yet (see the renderer table in docs/disc-survey.md).
+- Translation values are half-width by default; use `{"text": ..., "width": "full"}` only for text
+  drawn by a renderer that isn't patched yet. Only `0x8018C864` is left (see the renderer table in
+  docs/disc-survey.md).
+- Live debugging: the DuckStation MCP fork (localhost:2346). Game controls are tank style: Left/Right
+  rotate, Up/Down look, Triangle forward, Cross back, Circle interact.
 - EXE patches go in `tools/patch_exe.py`, each checking the retail instructions it replaces. Hand-fill
   delay slots and load-delay slots (`.set noreorder`), and cover new code with a unicorn test.
 - Tests: `python -m unittest discover tests` (needs `extracted/` and the script dump). The SCE.S
