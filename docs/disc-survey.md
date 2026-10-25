@@ -139,6 +139,15 @@ the page origin (x, y).
   (`0x801828E8`, `0x80182C40`, `0x80182CD0`: 16 -> 32) and the space advance (`0x801829A8`: 1 -> 2).
 - **Tested** by running the real patched EXE code under unicorn (`tests/test_halfwidth.py`), with a
   synthetic ROM font and stubbed LoadImage. The same harness reproduces the retail renderer's uploads.
+- **Confirmed in emulator:** half-width narration displays correctly (charset 4 is MSB-left), and
+  pages break after 3 rows.
+- **Scene splits:** the opening narration `SCE.S:59008` is typed across two scenes. The game shows
+  15 rows (5 pages) on a black screen, loads the office and keeps typing the same string in the office
+  window. The retail text breaks exactly there. A translation that ends inside the first 15 rows hangs
+  the game with an error sound when the office loads (bisected: the EXE patch and the menu rebuild were
+  fine). `tools/layout.py` simulates the window and the inserter rejects such text. The code that counts
+  the pages hasn't been found yet. The ending narration `SCE.S:59808` (17 rows) may be split the same
+  way; unchecked.
 - **Known limit:** a full-width character starting at half-column 31 overflows the page by 8 px.
   Translated text shouldn't mix full-width characters in, so this is only an edge case.
 - **Not yet verified on a real BIOS:** the bit order of charset 4 (assumed MSB-left like the Kanji ROM).

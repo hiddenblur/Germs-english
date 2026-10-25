@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script dir
+import layout
 import sce
 
 TOKEN = re.compile(r"\{([0-9])\}|\{([0-9a-fA-F]{2})\}|(\n)|(.)", re.S)
@@ -109,6 +110,7 @@ def main():
         e = dumps[sid]
         try:
             raw = encode(text, half)
+            layout.check_scene_split(sid, raw)
         except ValueError as err:
             raise SystemExit(f"{sid}: {err}")
         if e["cmd"] is not None:
