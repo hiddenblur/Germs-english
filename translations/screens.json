@@ -519,5 +519,375 @@
     "ink": 6
    }
   ]
+ },
+ "RES.R@9181C": {
+  "note": "Weapon name list",
+  "regions": [
+   {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 16,
+    "text": "Club",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 16,
+    "w": 64,
+    "h": 16,
+    "text": "Knife",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 32,
+    "w": 64,
+    "h": 16,
+    "text": "Stun Gun",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 48,
+    "w": 64,
+    "h": 16,
+    "text": "Morning Star",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 64,
+    "w": 64,
+    "h": 16,
+    "text": "Katana",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 80,
+    "w": 64,
+    "h": 16,
+    "text": "Defense Gun",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 96,
+    "w": 64,
+    "h": 16,
+    "text": "Crossbow",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 112,
+    "w": 64,
+    "h": 16,
+    "text": "Beretta8000",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 128,
+    "w": 64,
+    "h": 16,
+    "text": "MP5K",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 0,
+    "w": 64,
+    "h": 16,
+    "text": "Ithaca M37",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 16,
+    "w": 64,
+    "h": 16,
+    "text": "M47 Dragon",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 32,
+    "w": 64,
+    "h": 16,
+    "text": "M16A1",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 48,
+    "w": 64,
+    "h": 16,
+    "text": "Boomerang",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 64,
+    "w": 64,
+    "h": 16,
+    "text": "Cloudbuster",
+    "ink": 3,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 80,
+    "w": 64,
+    "h": 16,
+    "text": "EMW Gun",
+    "ink": 3,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 96,
+    "w": 64,
+    "h": 16,
+    "text": "Gravity Gun",
+    "ink": 3,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 112,
+    "w": 64,
+    "h": 16,
+    "text": "Crystal",
+    "ink": 3,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 128,
+    "w": 64,
+    "h": 16,
+    "text": "Hieronymus",
+    "ink": 3,
+    "bg": 0,
+    "align": "center"
+   }
+  ]
+ },
+ "RES.R@3AC81C": {
+  "note": "Weapon name list",
+  "regions": [
+   {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 16,
+    "text": "Club",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 16,
+    "w": 64,
+    "h": 16,
+    "text": "Knife",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 32,
+    "w": 64,
+    "h": 16,
+    "text": "Stun Gun",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 48,
+    "w": 64,
+    "h": 16,
+    "text": "Morning Star",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 64,
+    "w": 64,
+    "h": 16,
+    "text": "Katana",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 80,
+    "w": 64,
+    "h": 16,
+    "text": "Defense Gun",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 96,
+    "w": 64,
+    "h": 16,
+    "text": "Crossbow",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 112,
+    "w": 64,
+    "h": 16,
+    "text": "Beretta8000",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 128,
+    "w": 64,
+    "h": 16,
+    "text": "MP5K",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 0,
+    "w": 64,
+    "h": 16,
+    "text": "Ithaca M37",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 16,
+    "w": 64,
+    "h": 16,
+    "text": "M47 Dragon",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 32,
+    "w": 64,
+    "h": 16,
+    "text": "M16A1",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 48,
+    "w": 64,
+    "h": 16,
+    "text": "Boomerang",
+    "ink": 14,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 64,
+    "w": 64,
+    "h": 16,
+    "text": "Cloudbuster",
+    "ink": 15,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 80,
+    "w": 64,
+    "h": 16,
+    "text": "EMW Gun",
+    "ink": 15,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 96,
+    "w": 64,
+    "h": 16,
+    "text": "Gravity Gun",
+    "ink": 15,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 112,
+    "w": 64,
+    "h": 16,
+    "text": "Crystal",
+    "ink": 15,
+    "bg": 3,
+    "align": "center"
+   },
+   {
+    "x": 64,
+    "y": 128,
+    "w": 64,
+    "h": 16,
+    "text": "Hieronymus",
+    "ink": 15,
+    "bg": 3,
+    "align": "center"
+   }
+  ]
  }
 }
