@@ -151,10 +151,6 @@ class Machine:
         for off, v in ((0x218, 0), (0x21A, 0), (0x21E, len(text)), (0x220, 0)):
             self.uc.mem_write(P(GP + off), struct.pack("<h", v))
 
-    def hold_circle(self, held):
-        # raw BIOS pad buffer: status 0 (answered), button bytes active low
-        self.uc.mem_write(P(0x80007570), bytes([0, 0x41, 0xFF, 0xDF if held else 0xFF]))
-
     def menu(self, text, rows=3):
         self.set_text(text)
         self.call(MENU, rows)
@@ -228,22 +224,13 @@ class TypewriterSpeed(RendererTests):
         import patch_exe
         m = Machine(self.patched)
         m.start_typewriter(bytes([0xC1]) * 10)
-        m.hold_circle(False)
         m.call(self.wrapper(), 0)
         self.assertEqual(len(m.uploads), patch_exe.TYPEWRITER_SPEED)
         self.assertEqual(m.g(0x220), patch_exe.TYPEWRITER_SPEED)
 
-    def test_circle_finishes_the_page(self):
-        m = Machine(self.patched)
-        m.start_typewriter(bytes([0xC1]) * 200)          # more than a page (3 x 32)
-        m.hold_circle(True)
-        m.call(self.wrapper(), 0)
-        self.assertEqual(len(m.uploads), 96)              # stops at the page break
-
     def test_stops_at_end_of_string(self):
         m = Machine(self.patched)
         m.start_typewriter(bytes([0xC1]) * 2)
-        m.hold_circle(True)
         m.call(self.wrapper(), 0)
         self.assertEqual(len(m.uploads), 2)
 
@@ -252,14 +239,12 @@ class TypewriterSpeed(RendererTests):
         text = bytes([0xC1]) * 10
         m.start_typewriter(text)
         m.uc.mem_write(P(STRING + len(text) + 1), bytes([0xFE, 0xFF]))
-        m.hold_circle(True)                               # Circle is ignored here
         m.call(self.wrapper(), 0)
         self.assertEqual(len(m.uploads), 1)
 
     def test_retail_narration_length_keeps_retail_pace(self):
         m = Machine(self.patched)
         m.start_typewriter(bytes([0xC1]) * 567)            # length of the retail opening
-        m.hold_circle(True)
         m.call(self.wrapper(), 0)
         self.assertEqual(len(m.uploads), 1)
 

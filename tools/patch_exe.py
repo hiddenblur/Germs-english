@@ -161,10 +161,8 @@ NARRATION_DRAW = glyph_routine(
 
 # Typewriter speed. English has about twice the glyphs of the Japanese, so one glyph per
 # frame was too slow. Callers of 0x80182860 go through this wrapper instead. It draws up to
-# TYPEWRITER_SPEED glyphs per call, or finishes the page while Circle is held. It stops as
-# soon as the typewriter returns non-zero (page full, string done). Circle comes from the raw
-# pad buffer the BIOS fills at 0x80007570: byte 0 = 0 when a pad answered, byte 3 bit 5 = Circle
-# (active low). The wrapper lives in the free tail of the narration block.
+# TYPEWRITER_SPEED glyphs per call and stops as soon as the typewriter returns non-zero
+# (page full, string done). It lives in the free tail of the narration block.
 #
 # Timed narration: the opening runs alongside a timer that brings in the office. If the
 # text finishes early, the office never loads (the same hang as a too-short translation).
@@ -200,15 +198,6 @@ WRAPPER = f"""
     nop
 w_fast:
     addiu $s0, $zero, {TYPEWRITER_SPEED}
-    lui   $t0, 0x8000
-    lbu   $t1, 0x7573($t0)          # buttons byte 2 (active low)
-    lbu   $t2, 0x7570($t0)          # pad status: 0 = answered
-    nop
-    andi  $t1, $t1, 0x20            # Circle (0 = held)
-    or    $t1, $t1, $t2             # held only if a pad answered too
-    bne   $t1, $zero, w_loop
-    nop
-    addiu $s0, $zero, 200           # held: finish the page now
 w_loop:
     or    $a0, $s1, $zero
     jal   {TYPEWRITER:#x}

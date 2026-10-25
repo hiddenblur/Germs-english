@@ -131,13 +131,15 @@ the page origin (x, y).
   before then, the office never loads. That caused both the short-translation hang and a hang with
   faster typing. The "15 rows" rule is just how much text the retail pace covers in that time.
 - `tools/patch_exe.py` redirects all 5 typewriter calls to a wrapper (after the narration glyph
-  routine). It draws 3 glyphs per frame, or a whole page while Circle is held. Timed narration keeps
+  routine). It draws 3 glyphs per frame (confirmed to feel right in game). Timed narration keeps
   the retail pace: strings followed by the marker `FE FF` after their terminator (written by the
   inserter for `layout.TIMED`), or the retail opening/ending recognised by length (567, 495).
+- Circle to finish or advance a page: tried (wrapper reading the raw pad buffer) but it didn't work
+  in game, and retail never supported it. Removed for now. Pages advance on the `gp+0x222` timer;
+  that's the place to look if this is picked up again.
 - Controller: the BIOS fills a raw pad buffer at `0x80007570` (byte 0 = 0 when a pad answered,
   bytes 2-3 buttons active low; Circle = byte 3 bit 5). The game's own held-buttons word is at
   `0x801E6DA0` (Square = `0x0080`).
-- Still to check live: the faster typing in normal dialogue, and Circle finishing a page.
 
 ## Computer screens: text is images (confirmed live, 2026-10-25)
 
