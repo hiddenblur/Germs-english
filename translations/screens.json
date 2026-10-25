@@ -1,0 +1,523 @@
+{
+ "RES.R@1E101C": {
+  "note": "computer desktop menu",
+  "regions": [
+   {
+    "x": 20,
+    "y": 2,
+    "w": 92,
+    "h": 13,
+    "text": "City overview",
+    "ink": 2,
+    "bold": true
+   },
+   {
+    "x": 20,
+    "y": 18,
+    "w": 92,
+    "h": 13,
+    "text": "E-mail: Inbox",
+    "ink": 2,
+    "bold": true
+   },
+   {
+    "x": 20,
+    "y": 34,
+    "w": 92,
+    "h": 13,
+    "text": "Config",
+    "ink": 2,
+    "bold": true
+   },
+   {
+    "x": 20,
+    "y": 50,
+    "w": 92,
+    "h": 13,
+    "text": "Status analysis",
+    "ink": 2,
+    "bold": true
+   }
+  ]
+ },
+ "RES.R@1E301C": {
+  "note": "Config screen",
+  "regions": [
+   {
+    "x": 14,
+    "y": 13,
+    "w": 100,
+    "h": 15,
+    "text": "Config",
+    "ink": 1,
+    "bold": true
+   },
+   {
+    "x": 31,
+    "y": 35,
+    "w": 116,
+    "h": 11,
+    "text": "Message speed",
+    "ink": 1
+   },
+   {
+    "x": 30,
+    "y": 89,
+    "w": 140,
+    "h": 13,
+    "text": "Car driving speed",
+    "ink": 1
+   },
+   {
+    "x": 26,
+    "y": 47,
+    "w": 36,
+    "h": 12,
+    "text": "Fast",
+    "ink": 1,
+    "align": "center"
+   },
+   {
+    "x": 106,
+    "y": 47,
+    "w": 36,
+    "h": 12,
+    "text": "Normal",
+    "ink": 1,
+    "align": "center"
+   },
+   {
+    "x": 188,
+    "y": 47,
+    "w": 36,
+    "h": 12,
+    "text": "Slow",
+    "ink": 1,
+    "align": "center"
+   },
+   {
+    "x": 26,
+    "y": 103,
+    "w": 36,
+    "h": 12,
+    "text": "Fast",
+    "ink": 1,
+    "align": "center"
+   },
+   {
+    "x": 106,
+    "y": 103,
+    "w": 36,
+    "h": 12,
+    "text": "Normal",
+    "ink": 1,
+    "align": "center"
+   },
+   {
+    "x": 188,
+    "y": 103,
+    "w": 36,
+    "h": 12,
+    "text": "Slow",
+    "ink": 1,
+    "align": "center"
+   }
+  ]
+ },
+ "RES.R@3BD81C": {
+  "note": "Status screen",
+  "regions": [
+   {
+    "x": 15,
+    "y": 9,
+    "w": 103,
+    "h": 13,
+    "text": "[Status analysis]",
+    "ink": 8,
+    "bold": true
+   },
+   {
+    "x": 15,
+    "y": 23,
+    "w": 96,
+    "h": 12,
+    "text": "Experience",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 37,
+    "w": 96,
+    "h": 12,
+    "text": "Current level",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 50,
+    "w": 96,
+    "h": 12,
+    "text": "To next level",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 63,
+    "w": 96,
+    "h": 12,
+    "text": "Kills",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 76,
+    "w": 96,
+    "h": 12,
+    "text": "Time awake",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 90,
+    "w": 96,
+    "h": 12,
+    "text": "Evasion",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 103,
+    "w": 24,
+    "h": 12,
+    "text": "Hurt",
+    "ink": 1
+   },
+   {
+    "x": 39,
+    "y": 103,
+    "w": 32,
+    "h": 12,
+    "text": "Head",
+    "ink": 1,
+    "align": "right"
+   },
+   {
+    "x": 39,
+    "y": 116,
+    "w": 32,
+    "h": 12,
+    "text": "Torso",
+    "ink": 1,
+    "align": "right"
+   },
+   {
+    "x": 142,
+    "y": 103,
+    "w": 33,
+    "h": 12,
+    "text": "R.arm",
+    "ink": 1
+   },
+   {
+    "x": 142,
+    "y": 116,
+    "w": 33,
+    "h": 12,
+    "text": "L.arm",
+    "ink": 1
+   },
+   {
+    "x": 142,
+    "y": 131,
+    "w": 33,
+    "h": 12,
+    "text": "Legs",
+    "ink": 1
+   },
+   {
+    "x": 100,
+    "y": 153,
+    "w": 112,
+    "h": 12,
+    "text": "To attack analysis",
+    "ink": 1,
+    "align": "right"
+   }
+  ]
+ },
+ "RES.R@3B181C": {
+  "note": "attack analysis screen",
+  "regions": [
+   {
+    "x": 15,
+    "y": 12,
+    "w": 57,
+    "h": 13,
+    "text": "Skills",
+    "ink": 8,
+    "bold": true
+   },
+   {
+    "x": 72,
+    "y": 14,
+    "w": 71,
+    "h": 11,
+    "text": "1 Unarmed",
+    "ink": 1
+   },
+   {
+    "x": 72,
+    "y": 25,
+    "w": 71,
+    "h": 11,
+    "text": "2 Thrown",
+    "ink": 1
+   },
+   {
+    "x": 72,
+    "y": 36,
+    "w": 71,
+    "h": 11,
+    "text": "3 Short range",
+    "ink": 1
+   },
+   {
+    "x": 72,
+    "y": 47,
+    "w": 71,
+    "h": 11,
+    "text": "4 Long range",
+    "ink": 1
+   },
+   {
+    "x": 72,
+    "y": 58,
+    "w": 71,
+    "h": 11,
+    "text": "5 Special",
+    "ink": 1
+   },
+   {
+    "x": 15,
+    "y": 70,
+    "w": 120,
+    "h": 13,
+    "text": "Weapons held",
+    "ink": 8,
+    "bold": true
+   },
+   {
+    "x": 96,
+    "y": 87,
+    "w": 80,
+    "h": 11,
+    "text": "Weapon type",
+    "ink": 1,
+    "align": "right"
+   },
+   {
+    "x": 96,
+    "y": 128,
+    "w": 80,
+    "h": 11,
+    "text": "Weapon type",
+    "ink": 1,
+    "align": "right"
+   },
+   {
+    "x": 23,
+    "y": 103,
+    "w": 50,
+    "h": 10,
+    "text": "Level",
+    "ink": 1
+   },
+   {
+    "x": 23,
+    "y": 113,
+    "w": 50,
+    "h": 11,
+    "text": "Accuracy",
+    "ink": 1
+   },
+   {
+    "x": 23,
+    "y": 144,
+    "w": 50,
+    "h": 10,
+    "text": "Level",
+    "ink": 1
+   },
+   {
+    "x": 23,
+    "y": 154,
+    "w": 50,
+    "h": 11,
+    "text": "Accuracy",
+    "ink": 1
+   }
+  ]
+ },
+ "RES.R@3A000C": {
+  "note": "City map cards",
+  "regions": [
+   {
+    "x": 61,
+    "y": 5,
+    "w": 106,
+    "h": 12,
+    "text": "Thermal Power Plant",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 19,
+    "w": 106,
+    "h": 11,
+    "text": "[Old Harbor]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 69,
+    "w": 106,
+    "h": 12,
+    "text": "New Town Hospital",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 83,
+    "w": 106,
+    "h": 11,
+    "text": "[New Town]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 133,
+    "w": 106,
+    "h": 12,
+    "text": "Yamasaki Mine",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 147,
+    "w": 106,
+    "h": 11,
+    "text": "[North Mountains]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 197,
+    "w": 106,
+    "h": 12,
+    "text": "Great Cathedral",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 211,
+    "w": 106,
+    "h": 11,
+    "text": "[Old Town]",
+    "ink": 6,
+    "align": "center"
+   }
+  ]
+ },
+ "RES.R@3A600C": {
+  "note": "City map cards",
+  "regions": [
+   {
+    "x": 61,
+    "y": 5,
+    "w": 106,
+    "h": 12,
+    "text": "Indenco",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 19,
+    "w": 106,
+    "h": 11,
+    "text": "[West Mountains]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 69,
+    "w": 106,
+    "h": 12,
+    "text": "Hotel Seasons",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 83,
+    "w": 106,
+    "h": 11,
+    "text": "[Station]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 133,
+    "w": 106,
+    "h": 12,
+    "text": "Grand Station",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 147,
+    "w": 106,
+    "h": 11,
+    "text": "[Station]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 197,
+    "w": 106,
+    "h": 12,
+    "text": "Seaside Warehouses",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 211,
+    "w": 106,
+    "h": 11,
+    "text": "[Old Harbor]",
+    "ink": 6,
+    "align": "center"
+   },
+   {
+    "x": 61,
+    "y": 37,
+    "w": 106,
+    "h": 11,
+    "text": "Latest news on",
+    "ink": 6
+   },
+   {
+    "x": 61,
+    "y": 48,
+    "w": 106,
+    "h": 11,
+    "text": "the City's situation.",
+    "ink": 6
+   }
+  ]
+ }
+}

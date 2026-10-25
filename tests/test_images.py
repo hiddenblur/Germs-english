@@ -1,4 +1,4 @@
-"""TIM round trips, the image font, and drawing English into mail pages and inbox rows."""
+"""TIM round trips, the image font, and drawing English into mail pages, inbox rows and screens."""
 import sys
 import unittest
 from pathlib import Path
@@ -8,6 +8,7 @@ RES = ROOT / "extracted" / "files" / "RES.R"
 sys.path.insert(0, str(ROOT / "tools"))
 import font  # noqa: E402
 import images  # noqa: E402
+import insert_script  # noqa: E402
 import tim  # noqa: E402
 
 
@@ -54,6 +55,26 @@ class ImageTests(unittest.TestCase):
             for x in range(240):
                 if (x, y) not in inside:
                     self.assertEqual(px[y * 240 + x], t.pixels[y * 240 + x], (x, y))
+
+    def test_regions_change_only_their_rectangles(self):
+        t = tim.parse(self.res, 0x1E301C)                   # Config screen
+        region = dict(x=14, y=13, w=100, h=15, text="Config", ink=1)
+        px = images.render(t, {"regions": [region]})
+        for y in range(t.height):
+            for x in range(t.width):
+                if not (14 <= x < 114 and 13 <= y < 28):
+                    self.assertEqual(px[y * t.width + x], t.pixels[y * t.width + x], (x, y))
+        self.assertIn(1, px[20 * t.width + 14:20 * t.width + 114])
+        with self.assertRaises(ValueError):
+            images.render(t, {"regions": [dict(region, w=20)]})
+        with self.assertRaises(ValueError):
+            images.render(t, {"regions": [dict(region, x=250)]})
+
+    def test_screen_translations_fit(self):
+        tr = insert_script.load_translations([ROOT / "translations" / "screens.json"])
+        buf, problems = bytearray(self.res), []
+        images.apply(buf, tr, problems)
+        self.assertEqual(problems, [])
 
     def test_apply_changes_only_that_tim(self):
         sid, kind, t = next(i for i in self.items if i[1] == "mail page")

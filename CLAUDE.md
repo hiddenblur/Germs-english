@@ -20,7 +20,8 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
 - `sheets/`: translator spreadsheets from `tools/sheets.py export` (gitignored: Japanese inside).
   Workflow and rules: [docs/translating.md](docs/translating.md).
 - `tests/fixtures/test_lines.json`: the hand-made test translation used for test discs.
-- Text stored as images (the computer's mails, RES.R TIMs): `tools/images.py` (ids `RES.R@<offset>`),
+- Text stored as images (the computer's mails and screens, RES.R TIMs): `tools/images.py` (ids `RES.R@<offset>`;
+  screens with artwork take `{"regions": [...]}` rectangles, see `translations/screens.json`),
   `tools/tim.py` (TIM read/write and PNG export), `tools/font.py` (our own pixel font; never draw
   English with the BIOS font into images, since it can't be redistributed).
 - `build/`: inserter output and rebuilt disc images (gitignored).

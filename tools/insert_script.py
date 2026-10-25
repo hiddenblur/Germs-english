@@ -93,6 +93,9 @@ def load_translations(paths):
         data = json.loads(p.read_text(encoding="utf-8"))
         items = data.items() if isinstance(data, dict) else ((e["id"], e.get("en", "")) for e in data)
         for k, v in items:
+            if isinstance(v, dict) and "regions" in v:
+                tr[k] = (v, True)                   # image screen: regions, see images.py
+                continue
             text, half = (v.get("text", ""), v.get("width", "half") != "full") if isinstance(v, dict) else (v, True)
             if text:
                 tr[k] = (text, half)

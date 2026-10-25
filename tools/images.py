@@ -91,8 +91,39 @@ def render_row(t, text):
     return px
 
 
+def render_regions(t, regions):
+    """Screens with artwork around the text (Config, Status, map cards...): each region is
+    {x, y, w, h, text, ink, [bg], [align: left|center|right], [bold]}. The rectangle is
+    cleared to bg (default: its most common colour) and the text drawn in ink, centred
+    vertically on the capitals."""
+    px = bytearray(t.pixels)
+    for r in regions:
+        x0, y0, w, h = r["x"], r["y"], r["w"], r["h"]
+        if x0 < 0 or y0 < 0 or x0 + w > t.width or y0 + h > t.height:
+            raise ValueError(f"region {r['text']!r} is outside the {t.width}x{t.height} image")
+        box = [px[y * t.width + x] for y in range(y0, y0 + h) for x in range(x0, x0 + w)]
+        bg = r.get("bg", Counter(box).most_common(1)[0][0])
+        text, bold = r["text"], r.get("bold", False)
+        font.check_chars(text)
+        width = font.text_width(text) + (1 if bold else 0)
+        if width > w:
+            raise ValueError(f"{text!r} is {width} px; the region holds {w}")
+        for y in range(y0, y0 + h):
+            px[y * t.width + x0:y * t.width + x0 + w] = bytes([bg]) * w
+        align = r.get("align", "left")
+        x = x0 + {"left": 0, "center": (w - width) // 2, "right": w - width}[align]
+        y = y0 + max(0, (h - 8) // 2)
+        if y + font.HEIGHT > t.height:
+            y = t.height - font.HEIGHT
+        for dx in ((0, 1) if bold else (0,)):
+            font.draw(px, t.width, x + dx, y, text, r["ink"])
+    return px
+
+
 def render(t, text):
     """New pixels for a text image; raises ValueError if the text doesn't fit."""
+    if isinstance(text, dict):
+        return render_regions(t, text["regions"])
     return render_page(t, text) if kind_of(t) == "mail page" else render_row(t, text)
 
 
