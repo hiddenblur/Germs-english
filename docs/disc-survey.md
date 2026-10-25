@@ -141,6 +141,27 @@ the page origin (x, y).
   bytes 2-3 buttons active low; Circle = byte 3 bit 5). The game's own held-buttons word is at
   `0x801E6DA0` (Square = `0x0080`).
 
+## Profiles (panel renderer 0x80182D34)
+
+From the code; not seen in game yet. The likely trigger is "Residual thoughts remain" on a body.
+The caller (`0x80183618`) gets a profile record from `0x801767D4` and draws:
+- **line 0:** name at `+0x0C`, centred.
+- **line 1:** title at `+0x2C`, centred.
+- **line 2:** `sprintf(fmt @0x801704F0, age, sex, height, blood)`. The values come from the record
+  header: `+2` height, `+4` sex index, `+6` age, `+8` blood index. The words come from tables at
+  `0x801D76C4` (sex: ？/男/女) and `0x801D76D0` (blood: ？/A/B/O/AB型), stored at `0x801DFCB4..E0`.
+  These EXE strings are added to the dump by hand (`FIXED_EXE` in `tools/dump_script.py`).
+- **lines 3-7:** description at `+0x4C`. The line y table at `0x801D76A4` has 8 entries, so up to
+  5 rows. The renderer wraps mid-word at half-column 30 and ignores line breaks, so
+  `insert_script.profile_text` word-wraps into rows of 26 half-cells. It pads each row with
+  full-cell spaces (2 half-cells per byte), then adds a blank full-width space that crosses column 30.
+
+Records repeat across scenes. 373 unique texts cover the 452 fields.
+
+The computer also has a **Config** screen (third icon: message speed, which feeds the `gp+0x222`
+page timer, and car speed) and a **Status** screen (fourth icon). Both are images still to
+translate, and so is the City map's label bar (first icon).
+
 ## Computer screens: text is images (confirmed live, 2026-10-25)
 
 The in-office computer (desk prompt, then Down x2 to the blue icon, Circle for the inbox, Circle to

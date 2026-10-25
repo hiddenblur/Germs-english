@@ -70,6 +70,9 @@ def limit_text(entry, budgets=None, areas=None):
         space = f"; area {ai}: {free} bytes free" + (" (tight)" if free < TIGHT else "")
     if column is not None:
         return f"label only: ○ goes at half-column {column}" + space
+    if kind == "profile text":
+        return (f"word-wrapped into up to {windows.PROFILE_ROWS} rows of {windows.PROFILE_ROW} "
+                f"half-cells; max {entry['capacity'] - 1} bytes (padding counts); window unconfirmed")
     parts = [f"{win.width} half-cells per line"]
     if win.wrap:
         parts = [f"auto-wrapped at {windows.WRAP_WIDTH}, 3 lines per page"]

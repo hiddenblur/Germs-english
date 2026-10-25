@@ -173,8 +173,8 @@ class RendererTests(unittest.TestCase):
         import patch_exe
         cls.retail = EXE_PATH.read_bytes()
         cls.patched = patch_exe.apply(cls.retail)
-        table = cls.retail[PANEL_LINE_Y - LOAD + 0x800:][:16]
-        cls.line_y = struct.unpack("<4i", table)
+        table = cls.retail[PANEL_LINE_Y - LOAD + 0x800:][:32]
+        cls.line_y = struct.unpack("<8i", table)
 
     def assert_same_as_retail(self, run, text):
         old, new = Machine(self.retail), Machine(self.patched)
@@ -300,6 +300,26 @@ class PanelRenderer(RendererTests):
         start = (32 - 5) >> 1
         self.assertEqual(rects(ups), [(ORIGIN_X + 2 * (start + i), ORIGIN_Y + self.line_y[0], 2, 16)
                                       for i in range(5)])
+
+    def test_profile_description_breaks_between_words(self):
+        from insert_script import profile_text
+        text = "Works at my office. His mother is said to be from Hong Kong. Good at moving fast."
+        raw = profile_text(text)
+        ups = Machine(self.patched).panel(raw, 3)
+        rows = {}
+        for x, y, w, h, _ in ups:
+            rows.setdefault(y, []).append(x)
+        ys = sorted(rows)
+        self.assertGreater(len(ys), 1)
+        self.assertEqual(ys, [ORIGIN_Y + self.line_y[i] for i in range(3, 3 + len(ys))])
+        import windows
+        words_rows = windows.wrap(text, width=windows.PROFILE_ROW,
+                                  measure=lambda t: len(t)).split("\n")
+        for y, row in zip(ys, words_rows):
+            xs = sorted(rows[y])
+            self.assertEqual(xs[0], ORIGIN_X + 4)                      # every row starts at col 2
+            glyphs = sum(1 for c in row if c != " ")
+            self.assertEqual(len([x for x in xs if x < ORIGIN_X + 2 * 28]), glyphs)   # blank pad glyph sits at col 28
 
     def test_half_width_composites_onto_background(self):
         ups = Machine(self.patched).panel(bytes([0xC1]), 1)              # "A"

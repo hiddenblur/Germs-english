@@ -2,15 +2,17 @@
 
 Widths are in 8 px half-cells (all text renderers are patched; see docs/disc-survey.md).
 
-window     strings                                  width  layout
-dialogue   SCE.S opcode 5 flag 0, opening/ending    32     auto word-wrap, 3 rows per page
-           narration (typewriter 0x80182860)
-choice     SCE.S opcode 5 flag 1                    32     one line; label-style choices get
+window        strings                               width  layout
+dialogue      SCE.S opcode 5 flag 0, opening/ending 32     auto word-wrap, 3 rows per page
+              narration (typewriter 0x80182860)
+choice        SCE.S opcode 5 flag 1                 32     one line; label-style choices get
                                                            their indent, padding and ○ marker
                                                            added automatically
-panel      other SCE.S strings (names, profiles)    32     no wrap
-prompt     EXE strings                              32     no wrap, in place
-item       RES.R strings (item names)               32     no wrap, in place
+profile       other SCE.S strings: profile names    32     one centred line, in place
+              and titles (panel 0x80182D34)
+profile text  profile descriptions (40+ bytes)      26     word-wrapped into 5 rows, in place
+prompt        EXE strings                           32     no wrap, in place
+item          RES.R strings (item names)            32     no wrap, in place
 
 Only "dialogue" and the EXE desk prompt (a "prompt") are confirmed in the emulator; the
 other assignments come from how the strings are stored. Re-check a window when it is
@@ -34,10 +36,20 @@ class Window:
 WINDOWS = {
     "dialogue": Window("dialogue", 32, True, True, "auto-wrapped, 3 rows per page"),
     "choice": Window("choice", 32, False, False, "one line; type only the label"),
-    "panel": Window("panel", 32, False, False, "one line, no wrap"),
+    "profile": Window("profile", 32, False, False, "name or title, one centred line"),
+    "profile text": Window("profile text", 26, True, False, "description, up to 3 rows"),
     "prompt": Window("prompt", 32, False, True, "one line per break, fixed size"),
     "item": Window("item", 32, False, False, "one line, fixed size"),
 }
+
+# Profile records in SCE.S (drawn by the panel renderer 0x80182D34): name at +0x0C and title
+# at +0x2C (lines 0-1, centred), a stats line built from EXE strings (line 2), and the
+# description at +0x4C (lines 3-7). The renderer wraps lines 3+ mid-word at half-column 30
+# (rows start at 2), so descriptions are word-wrapped here into PROFILE_ROWS rows of
+# PROFILE_ROW half-cells, each padded so a blank full-width space crosses column 30.
+PROFILE_ROW = 26
+PROFILE_ROWS = 5                        # lines 3-7: the line y table (0x801D76A4) has 8 entries
+PROFILE_TEXT_MIN_CAPACITY = 40          # descriptions; names and titles are much shorter
 NARRATION = {"SCE.S:59008", "SCE.S:59808"}
 # a word-wrapped line must stay below the width: a line that ends exactly at the
 # edge wraps by itself and the line break after it would add an empty row
@@ -52,7 +64,9 @@ def classify(entry):
         return "dialogue"
     if entry["cmd"]:
         return "choice" if entry["cmd"]["flag"] == 1 else "dialogue"
-    return {"SCE.S": "panel", "SLPS_021.07": "prompt", "RES.R": "item"}[entry["file"]]
+    if entry["file"] == "SCE.S":
+        return "profile text" if entry["capacity"] >= PROFILE_TEXT_MIN_CAPACITY else "profile"
+    return {"SLPS_021.07": "prompt", "RES.R": "item"}[entry["file"]]
 
 
 def marker_column(entry):

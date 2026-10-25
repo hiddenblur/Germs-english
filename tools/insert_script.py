@@ -121,6 +121,8 @@ def prepare(entry, text, half=True):
         if width > column - 2:
             raise ValueError(f"choice label is {width} half-cells; at most {column - 2} fit before the ○")
         text = "{20}" + text + "{col %d}{3}○" % column
+    if kind == "profile text":
+        return profile_text(text, half)
     if win.wrap:
         text = windows.wrap(text, measure=lambda t: layout.line_widths(encode(t, half))[0])
     raw = encode(text, half)
@@ -129,6 +131,27 @@ def prepare(entry, text, half=True):
         raise ValueError(f"{kind} line is {widest} half-cells wide, limit {win.width}")
     layout.check_scene_split(entry["id"], raw)
     return raw
+
+
+def profile_text(text, half=True):
+    """Profile description for the panel renderer, which ignores line breaks and wraps
+    mid-word: word-wrap into rows, pad each row to the wrap column with half spaces, and end
+    it with a blank full-width space (drawn as a glyph, so it triggers the wrap)."""
+    measure = lambda t: layout.line_widths(encode(t, half))[0]
+    rows = windows.wrap(text, width=windows.PROFILE_ROW, measure=measure).split("\n")
+    if len(rows) > windows.PROFILE_ROWS:
+        raise ValueError(f"{len(rows)} rows; a profile description holds {windows.PROFILE_ROWS}")
+    out = bytearray()
+    for i, row in enumerate(rows):
+        raw = encode(row, half)
+        width = layout.line_widths(raw)[0]
+        if width > windows.PROFILE_ROW:
+            raise ValueError(f"profile row is {width} half-cells, limit {windows.PROFILE_ROW}")
+        out += raw
+        if i < len(rows) - 1:
+            pad = windows.PROFILE_ROW - width      # full-cell spaces: 2 half-cells per byte
+            out += b" " * (pad // 2) + b"\xA0" * (pad % 2) + "　".encode("cp932")
+    return bytes(out)
 
 
 def write_in_place(buf, off, raw, capacity):

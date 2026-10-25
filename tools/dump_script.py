@@ -33,6 +33,15 @@ from find_text import is_kana, is_lead, scan
 
 SCRIPT_FILES = ["SCE.S", "RES.R"]
 LOOSE_FILES = ["SLPS_021.07"]
+
+# Short EXE strings the scan can't find (too few kana), with their slot sizes: the profile
+# panel's stats line (0x80182D34, line 2) is sprintf("%s才 %s %sｃｍ %s", age, sex, height,
+# blood) with the format at 0x801704F0 and word tables at 0x801D76C4 / 0x801D76D0.
+FIXED_EXE = {
+    0xCF0: 20,                                  # stats format (next string at 0xD04)
+    0x704B4: 4, 0x704B8: 4, 0x704BC: 4,         # sex: 男, 女, ？
+    0x704C0: 8, 0x704C8: 8, 0x704D0: 8, 0x704D8: 8, 0x704E0: 8,   # blood: AB, O, B, A, ？
+}
 MAX_CMD = 0x2000
 MAX_ARGC = 64
 
@@ -133,6 +142,13 @@ def main():
             loose = loose_entries(data, rel, covered)
         else:
             entries, loose = [], loose_entries(data, rel)
+            found = {e["offset"] for e in loose}
+            for off, cap in FIXED_EXE.items():
+                if off not in found:
+                    raw = data[off:off + cap].split(b"\0")[0]
+                    loose.append({"id": f"{rel}:{off:X}", "file": rel, "offset": off,
+                                  "length": len(raw), "capacity": cap, "cmd": None,
+                                  "ja": raw.decode("cp932"), "en": ""})
         all_entries = sorted(entries + loose, key=lambda e: e["offset"])
         name = rel.replace("/", "_") + ".json"
         (out_dir / name).write_text(json.dumps(all_entries, ensure_ascii=False, indent=1),

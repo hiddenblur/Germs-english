@@ -86,5 +86,14 @@
  "SLPS_021.07:216C": "{2}Anything else?\nChoose with Up/Down.\n{col 12}OK{col 18}{3}○ {2}Hang up {4}×",
  "SLPS_021.07:22C8": "{20}{1}Leave the {7}car{col 28}{3}○",
  "SLPS_021.07:22E4": "{20}{1}Leave the {7}train{col 28}{3}○",
- "SLPS_021.07:2300": "{20}{1}Leave the {7}subway{col 28}{3}○"
+ "SLPS_021.07:2300": "{20}{1}Leave the {7}subway{col 28}{3}○",
+ "SLPS_021.07:CF0": "Age %s %s %scm %s",
+ "SLPS_021.07:704B4": "F",
+ "SLPS_021.07:704B8": "M",
+ "SLPS_021.07:704BC": "?",
+ "SLPS_021.07:704C0": "Type AB",
+ "SLPS_021.07:704C8": "Type O",
+ "SLPS_021.07:704D0": "Type B",
+ "SLPS_021.07:704D8": "Type A",
+ "SLPS_021.07:704E0": "Type ?"
 }
