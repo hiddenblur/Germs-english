@@ -1054,5 +1054,78 @@
     "align": "center"
    }
   ]
+ },
+ "SCE.S@56D01C": {
+  "note": "Map shop husband: topics menu",
+  "regions": [
+   {
+    "x": 7,
+    "y": 8,
+    "w": 89,
+    "h": 17,
+    "text": "How to get there",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 7,
+    "y": 26,
+    "w": 89,
+    "h": 16,
+    "text": "Building history",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 7,
+    "y": 43,
+    "w": 89,
+    "h": 16,
+    "text": "Getting around",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
+ },
+ "SCE.S@56B01C": {
+  "note": "Map shop husband: transport menu",
+  "regions": [
+   {
+    "x": 7,
+    "y": 16,
+    "w": 89,
+    "h": 14,
+    "text": "Driving",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 7,
+    "y": 32,
+    "w": 89,
+    "h": 16,
+    "text": "Subway",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 7,
+    "y": 49,
+    "w": 89,
+    "h": 16,
+    "text": "Mine Line",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 7,
+    "y": 66,
+    "w": 89,
+    "h": 18,
+    "text": "Bus",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
  }
 }

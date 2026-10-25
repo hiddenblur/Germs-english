@@ -127,11 +127,14 @@ def render(t, text):
     return render_page(t, text) if kind_of(t) == "mail page" else render_row(t, text)
 
 
-def apply(buf, tr, problems):
-    """Draw translated text into the TIMs in RES.R (buf, edited in place)."""
+def apply(buf, tr, problems, file="RES.R"):
+    """Draw translated text into the TIMs of one file (buf, edited in place); ids for other
+    files are skipped. Most images are in RES.R; a few menus live in SCE.S."""
     for sid, (text, _half) in tr.items():
         try:
             name, off = parse_id(sid)
+            if name != file:
+                continue
             t = tim.parse(buf, off)
             t.pixels = render(t, text)
             new = t.to_bytes()

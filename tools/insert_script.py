@@ -174,7 +174,8 @@ def apply(root, tr):
     tr = {sid: v for sid, v in tr.items() if "@" not in sid}
     problems = [(sid, "unknown id") for sid in sorted(set(tr) - set(dumps))]
     bufs = {name: bytearray((files / name).read_bytes()) for name in ("SCE.S", "RES.R", "SLPS_021.07")}
-    images.apply(bufs["RES.R"], image_tr, problems)
+    for name in ("RES.R", "SCE.S"):
+        images.apply(bufs[name], image_tr, problems, name)
 
     # 1. strings outside commands go in place, before SCE.S is parsed
     cmd_edits = {}
