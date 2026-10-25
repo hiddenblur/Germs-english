@@ -49,9 +49,20 @@ a black screen, the rest in the office. It must run past 15 lines.
 ## Space
 
 Script strings can grow, but each script area has a fixed amount of free space, and the disc
-layout can't grow. `check` reports `scene S area A: N bytes over its free space` and lists the
-translated strings in that area. Some areas have none to spare (the office, scene 0 area 0).
-English usually takes about the same bytes as the Japanese, but trim there if needed.
+layout can't grow. Space is shared by every string in the area: growing one line uses up room
+another line could have had, and shortening a line gives room back.
+
+- In the sheets, the `limit` column of each script string names its area and the free bytes the
+  area starts with, e.g. `area 0: 0 bytes free (tight)`.
+- `check` prints a table of every area: free bytes now (with current translations) and in
+  retail, and how many of its strings are translated. Areas under 64 bytes are marked `tight`,
+  and areas past 0 are marked `OVER`.
+- Areas past 0 also show up as problems naming the translated strings to trim.
+
+At retail, 2 of the 84 areas are tight: the office (`sce_00`, area 0, 0 bytes free) and
+`sce_01` area 0 (24 bytes). Translate those concisely. Half-width English usually takes about
+the same bytes as the Japanese, since each English character is 1 byte and each Japanese
+character is 2.
 
 ## Building a test disc
 

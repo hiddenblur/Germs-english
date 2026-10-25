@@ -216,18 +216,25 @@ def patch_exe(exe, table):
     return bytes(exe)
 
 
-def aset_overflows(scenes):
-    """Yield (scene, area, bytes over, arg offsets) for each ASET whose records no longer
-    fit in its padding. Each one would grow SCE.S by a sector, which the disc can't take."""
+def aset_budgets(scenes):
+    """Yield (scene, area, free bytes, arg offsets) for every ASET. Free bytes is how much
+    the records can still grow without the area needing another sector; negative means over."""
     for si, s in enumerate(scenes):
         areas = [c for c in s.chunks if isinstance(c, Area)]
         for ai, area in enumerate(areas):
             for tag, payload in area.subs:
                 if isinstance(payload, Aset):
                     recs, tail = payload.to_bytes()
-                    if tail < MIN_ASET_TAIL:
-                        offs = [o for r in payload.records for c in r.commands for o in c.arg_offsets]
-                        yield si, ai, MIN_ASET_TAIL - tail, offs
+                    offs = [o for r in payload.records for c in r.commands for o in c.arg_offsets]
+                    yield si, ai, tail - MIN_ASET_TAIL, offs
+
+
+def aset_overflows(scenes):
+    """Yield (scene, area, bytes over, arg offsets) for each ASET whose records no longer
+    fit in its padding. Each one would grow SCE.S by a sector, which the disc can't take."""
+    for si, ai, free, offs in aset_budgets(scenes):
+        if free < 0:
+            yield si, ai, -free, offs
 
 
 def iter_commands(scenes):

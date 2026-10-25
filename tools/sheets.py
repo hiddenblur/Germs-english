@@ -30,6 +30,23 @@ EXTRACTED = ROOT / "extracted"
 SHEETS = ROOT / "sheets"
 TRANSLATIONS = ROOT / "translations"
 COLUMNS = ["id", "window", "limit", "ja", "en", "note"]
+TIGHT = 64          # areas with less free space than this are flagged
+
+
+def load_game():
+    return ((EXTRACTED / "files" / "SCE.S").read_bytes(),
+            (EXTRACTED / "files" / "SLPS_021.07").read_bytes())
+
+
+def area_budgets(sce_bytes, exe):
+    """{(scene, area): (free bytes, set of arg offsets)} for every script area."""
+    scenes = sce.parse(sce_bytes, exe)
+    return {(si, ai): (free, set(offs)) for si, ai, free, offs in sce.aset_budgets(scenes)}
+
+
+def area_of(budgets):
+    """{arg offset: (scene, area)}; offsets are the retail ones, kept through rebuilds."""
+    return {o: key for key, (_, offs) in budgets.items() for o in offs}
 
 
 def group_of(entry, scene_table):
@@ -41,12 +58,17 @@ def group_of(entry, scene_table):
     return f"sce_{scene:02d}"
 
 
-def limit_text(entry):
+def limit_text(entry, budgets=None, areas=None):
     kind = windows.classify(entry)
     win = windows.WINDOWS[kind]
     column = windows.marker_column(entry)
+    space = ""
+    if entry["cmd"] is not None and areas and entry["offset"] in areas:
+        si, ai = areas[entry["offset"]]
+        free = budgets[(si, ai)][0]
+        space = f"; area {ai}: {free} bytes free" + (" (tight)" if free < TIGHT else "")
     if column is not None:
-        return f"label only: ○ goes at half-column {column}"
+        return f"label only: ○ goes at half-column {column}" + space
     parts = [f"{win.width} half-cells per line"]
     if win.wrap:
         parts = [f"auto-wrapped at {windows.WRAP_WIDTH}, 3 lines per page"]
@@ -56,7 +78,7 @@ def limit_text(entry):
         parts.append("first 15 lines on a black screen, the rest in the next scene")
     if not win.confirmed:
         parts.append("window unconfirmed")
-    return "; ".join(parts)
+    return "; ".join(parts) + space
 
 
 def entries():
@@ -80,6 +102,8 @@ def read_translation_files():
 
 def export():
     tr = read_translation_files()
+    budgets = area_budgets(*load_game())       # retail free space: the starting budget
+    areas = area_of(budgets)
     SHEETS.mkdir(exist_ok=True)
     groups = {}
     for group, e in entries():
@@ -90,7 +114,7 @@ def export():
             w.writerow(COLUMNS)
             for e in rows:
                 en, note = tr.get(e["id"], ("", ""))
-                w.writerow([e["id"], windows.classify(e), limit_text(e),
+                w.writerow([e["id"], windows.classify(e), limit_text(e, budgets, areas),
                             windows.ja_for_sheet(e["ja"]), en, note])
     print(f"wrote {len(groups)} sheets to {SHEETS}")
 
@@ -113,9 +137,32 @@ def import_():
     print(f"imported {written} translated strings into {TRANSLATIONS}")
 
 
+def free_space_report(bufs, tr):
+    """Print free bytes per script area that holds text: now (with translations) and retail."""
+    retail = area_budgets(*load_game())
+    now = area_budgets(bytes(bufs["SCE.S"]), bytes(bufs["SLPS_021.07"]))
+    areas = area_of(retail)
+    text, done = Counter(), Counter()
+    for group, e in entries():
+        if e["cmd"] is not None and e["offset"] in areas:
+            text[areas[e["offset"]]] += 1
+            done[areas[e["offset"]]] += e["id"] in tr
+    print("Free space per script area (bytes; growth past 0 needs a sector the disc doesn't have)")
+    print("  sheet   area   free now   retail   strings translated")
+    tight = 0
+    for key in sorted(text):
+        si, ai = key
+        free_now, free_retail = now[key][0], retail[key][0]
+        flag = "OVER" if free_now < 0 else "tight" if free_now < TIGHT else ""
+        tight += bool(flag)
+        print(f"  sce_{si:02d}  {ai:4}  {free_now:9}  {free_retail:7}   {done[key]:4}/{text[key]:<4}  {flag}")
+    print(f"{len(text)} areas with text; {tight} under {TIGHT} bytes free")
+
+
 def check():
     tr = insert_script.load_translations([TRANSLATIONS]) if TRANSLATIONS.exists() else {}
-    _, problems = insert_script.apply(EXTRACTED, tr)
+    bufs, problems = insert_script.apply(EXTRACTED, tr)
+    free_space_report(bufs, tr)
     total, done = Counter(), Counter()
     for group, e in entries():
         total[group] += 1
