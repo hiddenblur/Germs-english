@@ -83,7 +83,7 @@ record            u32 size (including itself) | 0x38-byte header (u16 event id, 
     so files are probably found by name, but this needs checking in a debugger.
   - The DIR entry fields a..d and the record header fields are kept as-is. Their meaning is unknown.
 - Other text in SCE.S (454 strings: character names, profiles, unit names) sits in fixed fields
-  outside commands. RES.R holds item and food names (81). The EXE holds 89 system/menu strings.
+  outside commands. RES.R holds item and food names (81), and a `WEPN` table at `RES.R:0x76000`: an 8-byte header (`WEPN`, u32 size), then 0x60-byte records `[u16 id][u16 category][char name[32]][stats from +0x24]`, 18 weapons (dumped as fixed 32-byte fields, window "weapon"). The EXE holds 89 system/menu strings.
 
 ## Script dump
 
@@ -120,7 +120,7 @@ the page origin (x, y).
 | `0x80182860` | narration typewriter: one glyph per call, 16x3 cells, then a page prompt via `0x801A4A68(0x40A, 1)`. Also NPC dialogue (confirmed live: the assistant's lines, caller `0x80183C18`) | gp `+0x218` col, `+0x21A` row, `+0x21C` colour, `+0x21E` length, `+0x220` index | **patched, confirmed live** |
 | `0x80182518` | whole string at once into a cleared window (caller clears it with `0x801AE070` first). Prompts and menus: confirmed live with the desk prompt at `0x80170CF8` (EXE data, caller `0x80183FFC`, row limit 1) | `s2` col, `s4` row, `s3` index, `fp` string, `s6` window, row limit at `0x98(sp)` | **patched, confirmed live** |
 | `0x80182D34` | 4-line panel (caller `0x80183778`: three struct strings + one sprintf line). Lines 0-1 centred, lines 2+ start at col 1 and wrap at 15. Line y from the table at `0x801D76A4` (3, 21, 39, 57, 74, 91). Composites onto the background via StoreImage `0x801B0694` | `s2` col, `s5` line, `s7` line y, `s3` index, `s6` window | **patched**, emulator-tested only (screen not found yet) |
-| `0x8018C864` | glyphs from a struct (`+4`), 8x15 rects with its own 2/`0xE` pixel values | | not yet (never seen firing) |
+| `0x8018C864` | weapon names: the RES.R `WEPN` record's name (`+4`), seen on the attack analysis screen (caller `0x8018CD10`, list rows 0x11 apart). Each Kanji ROM glyph is squashed to an 8x15 cell (2 source pixels -> 1: both set 2, both clear `0xE`, mixed `0xA`); always 12 cells, blanks filled with `0xEE` | `s4` record, `s2` byte index, rect at `0x10(sp)` | **patched** (one cell per half-width byte, 12 cells), emulator-tested only |
 
 ## Typewriter speed and the timed opening
 

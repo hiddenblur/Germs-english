@@ -25,6 +25,7 @@ Each entry:
     en        translation (empty)
 """
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -42,6 +43,22 @@ FIXED_EXE = {
     0x704B4: 4, 0x704B8: 4, 0x704BC: 4,         # sex: 男, 女, ？
     0x704C0: 8, 0x704C8: 8, 0x704D0: 8, 0x704D8: 8, 0x704E0: 8,   # blood: AB, O, B, A, ？
 }
+# RES.R weapon table: a "WEPN" chunk of 0x60-byte records after an 8-byte header, the name
+# in a 32-byte field at +4 (stats from +0x24), drawn by 0x8018C864 (12 cells).
+WEAPON_RECORD, WEAPON_NAME, WEAPON_NAME_SIZE = 0x60, 4, 0x20
+
+
+def weapon_names(data):
+    """{offset: capacity} of the weapon names in RES.R."""
+    base = data.find(b"WEPN") + 8
+    out = {}
+    for r in range(base, base + struct.unpack_from("<I", data, base - 4)[0] - WEAPON_RECORD + 1, WEAPON_RECORD):
+        if data[r + WEAPON_NAME] == 0:
+            break
+        out[r + WEAPON_NAME] = WEAPON_NAME_SIZE
+    return out
+
+
 MAX_CMD = 0x2000
 MAX_ARGC = 64
 
@@ -139,7 +156,13 @@ def main():
         data = (root / "files" / rel).read_bytes()
         if rel in SCRIPT_FILES:
             entries, covered = dump_script_file(data, rel)
-            loose = loose_entries(data, rel, covered)
+            fixed = weapon_names(data) if rel == "RES.R" else {}
+            loose = [e for e in loose_entries(data, rel, covered) if e["offset"] not in fixed]
+            for off, cap in fixed.items():
+                raw = data[off:off + cap].split(bytes(1))[0]
+                loose.append({"id": f"{rel}:{off:X}", "file": rel, "offset": off,
+                              "length": len(raw), "capacity": cap, "cmd": None,
+                              "window": "weapon", "ja": raw.decode("cp932", "replace"), "en": ""})
         else:
             entries, loose = [], loose_entries(data, rel)
             found = {e["offset"] for e in loose}

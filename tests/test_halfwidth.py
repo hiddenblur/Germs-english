@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 LOAD, GP = 0x80170000, 0x801DFC58
 NARRATION, MENU, PANEL = 0x80182860, 0x80182518, 0x80182D34
+WEAPON_NAME = 0x8018C864        # draws a RES.R WEPN record's name (+4)
 WINDOW, ORIGIN, STRING, KANJI = 0x80100000, 0x80100100, 0x80100200, 0x80100400
 SENTINEL = 0x80000100
 ORIGIN_X, ORIGIN_Y, COLOUR = 0x200, 0x100, 7
@@ -79,7 +80,8 @@ class Machine:
         uc.mem_write(P(ORIGIN), struct.pack("<HHHH", ORIGIN_X, ORIGIN_Y, 0x40, 0x40))
         self.uploads, self.vram = [], {}
         stubs = {0x801A44B8: self.window, 0x801B1370: self.krom, 0x801B05A8: self.load_image,
-                 0x801B0694: self.store_image, 0x80184160: self.ret0, 0x801A4A68: self.ret0}
+                 0x801B0694: self.store_image, 0x80184160: self.ret0, 0x801A4A68: self.ret0,
+                 0x801891A4: self.weapon_record}
         uc.hook_add(UC_HOOK_CODE, lambda uc, addr, size, _: self.hook(addr, stubs))
 
     def hook(self, addr, stubs):
@@ -97,6 +99,9 @@ class Machine:
 
     def window(self):
         self.uc.reg_write(R.UC_MIPS_REG_V0, WINDOW)
+
+    def weapon_record(self):
+        self.uc.reg_write(R.UC_MIPS_REG_V0, STRING - 4)    # name at +4
 
     def krom(self):
         self.uc.mem_write(P(KANJI), kanji_bytes(self.reg(R.UC_MIPS_REG_A0) & 0xFFFF))
@@ -159,6 +164,12 @@ class Machine:
     def panel(self, text, line):
         self.set_text(text)
         self.call(PANEL, line)
+        return self.uploads
+
+    def weapon_name(self, text, y=0x11):
+        self.set_text(text)
+        self.uc.reg_write(R.UC_MIPS_REG_A2, 3)              # weapon id (the lookup is stubbed)
+        self.call(WEAPON_NAME, y)
         return self.uploads
 
 
@@ -331,6 +342,36 @@ class PanelRenderer(RendererTests):
             for i in range(8):
                 want = COLOUR if glyph & (0x80 >> i) else (bg >> (4 * i)) & 0xF
                 self.assertEqual((word >> (4 * i)) & 0xF, want, f"row {r} pixel {i}")
+
+
+BLANK_CELL = bytes([0xEE]) * 60
+
+
+class WeaponNameRenderer(RendererTests):
+    def cell(self, rows):
+        """8x15 cell for a half-width glyph: ink 2, background 0xE."""
+        return b"".join(struct.pack("<I", sum((2 if b & (0x80 >> i) else 0xE) << (4 * i) for i in range(8)))
+                        for b in rows)
+
+    def test_japanese_matches_retail(self):
+        self.assert_same_as_retail(lambda m, t: m.weapon_name(t), "棍棒".encode("cp932"))
+        self.assert_same_as_retail(lambda m, t: m.weapon_name(t), "Ｍ４７ドラゴン".encode("cp932"))
+
+    def test_half_width_one_cell_per_byte(self):
+        m = Machine(self.patched)
+        ups = m.weapon_name(bytes(c + 0x80 for c in b"Club"))
+        self.assertEqual(rects(ups), [(ORIGIN_X + 2 * i, ORIGIN_Y + 0x11, 2, 15) for i in range(12)])
+        for i, c in enumerate(b"Club"):
+            self.assertEqual(ups[i][4], self.cell(half_rows(c)), chr(c))
+        self.assertTrue(all(u[4] == BLANK_CELL for u in ups[4:]))
+
+    def test_half_space_and_mixed(self):
+        m = Machine(self.patched)
+        ups = m.weapon_name(bytes([0xC1, 0xA0]) + "棍".encode("cp932") + bytes([0xC2]))
+        self.assertEqual(ups[0][4], self.cell(half_rows(ord("A"))))
+        self.assertEqual(ups[1][4], BLANK_CELL)
+        self.assertEqual(ups[3][4], self.cell(half_rows(ord("B"))))
+        self.assertEqual(len(ups), 12)
 
 
 if __name__ == "__main__":

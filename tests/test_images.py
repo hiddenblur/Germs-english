@@ -24,6 +24,26 @@ class FontTests(unittest.TestCase):
             font.wrap("é", 100)
 
 
+def glyph_boxes(t, inks):
+    """Bounding boxes of the 8-connected blobs of the given colours."""
+    w = t.width
+    todo = {(i % w, i // w) for i, v in enumerate(t.pixels) if v in inks}
+    boxes = []
+    while todo:
+        stack = [todo.pop()]
+        xs, ys = [], []
+        while stack:
+            x, y = stack.pop()
+            xs.append(x)
+            ys.append(y)
+            for q in ((x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                if q in todo:
+                    todo.remove(q)
+                    stack.append(q)
+        boxes.append((min(xs), min(ys), max(xs), max(ys)))
+    return boxes
+
+
 @unittest.skipUnless(RES.exists(), "needs the extracted disc")
 class ImageTests(unittest.TestCase):
     @classmethod
@@ -75,6 +95,23 @@ class ImageTests(unittest.TestCase):
         buf, problems = bytearray(self.res), []
         images.apply(buf, tr, problems)
         self.assertEqual(problems, [])
+
+    def test_screen_regions_cover_whole_glyphs(self):
+        """A region that cuts through an original glyph leaves stray pixels next to it."""
+        tr = insert_script.load_translations([ROOT / "translations" / "screens.json"])
+        for sid, (spec, _) in tr.items():
+            t = tim.parse(self.res, images.parse_id(sid)[1])
+            regions = spec["regions"]
+            for x0, y0, x1, y1 in glyph_boxes(t, {r["ink"] for r in regions}):
+                if x1 - x0 > 60 or y1 - y0 > 20:
+                    continue                                # frames and bars
+                touched = [r for r in regions if x0 < r["x"] + r["w"] and x1 >= r["x"]
+                           and y0 < r["y"] + r["h"] and y1 >= r["y"]]
+                if touched:                                 # every pixel cleared by some region
+                    self.assertTrue(all(any(r["x"] <= x < r["x"] + r["w"] and r["y"] <= y < r["y"] + r["h"]
+                                            for r in regions)
+                                        for x in range(x0, x1 + 1) for y in range(y0, y1 + 1)),
+                                    f"{sid}: glyph {x0, y0, x1, y1} is cut by {touched[0]['text']!r}")
 
     def test_apply_changes_only_that_tim(self):
         sid, kind, t = next(i for i in self.items if i[1] == "mail page")

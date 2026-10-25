@@ -13,6 +13,8 @@ profile       other SCE.S strings: profile names    32     one centred line, in 
 profile text  profile descriptions (40+ bytes)      26     word-wrapped into 5 rows, in place
 prompt        EXE strings                           32     no wrap, in place
 item          RES.R strings (item names)            32     no wrap, in place
+weapon        RES.R WEPN record names               12     one line of 8 px cells, in place
+              (renderer 0x8018C864)
 
 Only "dialogue" and the EXE desk prompt (a "prompt") are confirmed in the emulator; the
 other assignments come from how the strings are stored. Re-check a window when it is
@@ -40,6 +42,7 @@ WINDOWS = {
     "profile text": Window("profile text", 26, True, False, "description, up to 3 rows"),
     "prompt": Window("prompt", 32, False, True, "one line per break, fixed size"),
     "item": Window("item", 32, False, False, "one line, fixed size"),
+    "weapon": Window("weapon", 12, False, True, "weapon name, one line of 12 cells"),
 }
 
 # Profile records in SCE.S (drawn by the panel renderer 0x80182D34): name at +0x0C and title
@@ -60,6 +63,8 @@ CHOICE = re.compile(r"^ ?(?P<label>.*?) *3○$", re.S)
 
 def classify(entry):
     """Return the window name for a dump entry."""
+    if entry.get("window"):                 # set by the dumper (fixed-layout records)
+        return entry["window"]
     if entry["id"] in NARRATION:
         return "dialogue"
     if entry["cmd"]:

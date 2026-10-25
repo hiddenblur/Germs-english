@@ -266,6 +266,103 @@ PANEL_DRAW = glyph_routine(
     j     0x80183020
     addiu $s3, $s3, -2""")
 
+# Weapon name renderer 0x8018C864 (attack analysis, weapon lists): the name is the RES.R
+# WEPN record's +4 field. Retail squashes each 16 px Kanji ROM glyph into an 8x15 cell
+# (2 source pixels -> 1: both set 2, both clear 0xE, mixed 0xA) and draws 12 cells,
+# blanking the ones past the end with 0xEE. Patched: the same, but a byte in 0xA1-0xFE is
+# one cell from the BIOS 8x15 font (2 / 0xE) and 0xA0 a blank cell, so 12 half-width
+# characters fit. s4 record, s2 byte index, s3 cells drawn, rect at 0x10(sp) (w 2, h 15),
+# buffer at 0x18(sp). Entry at 0x8018C8E4 with v0 = strlen; exits to the epilogue.
+WEAPON_CELLS = 12
+WEAPON_DRAW = f"""
+    or    $s1, $v0, $zero           # string length
+    or    $s3, $zero, $zero         # cells drawn
+wd_cell:
+    slt   $v0, $s2, $s1
+    beq   $v0, $zero, wd_blank
+    addiu $s0, $sp, 0x18
+    addu  $t0, $s4, $s2
+    lbu   $a0, 4($t0)
+    lbu   $t1, 5($t0)
+    sltiu $t2, $a0, 0xA0
+    bne   $t2, $zero, wd_full
+    addiu $t2, $a0, -0xA1
+    bltz  $t2, wd_blank             # 0xA0: half space
+    addiu $s2, $s2, 1
+    sll   $t3, $t2, 4
+    subu  $t3, $t3, $t2             # (c - 0xA1) * 15
+    lui   $t9, 0xBFC8
+    addiu $t9, $t9, -0x722          # 0xBFC7F8DE
+    addu  $t9, $t9, $t3
+    beq   $zero, $zero, wd_draw
+    addiu $t8, $zero, 1             # 1 byte per row, 1 bit per pixel
+wd_full:
+    sll   $a0, $a0, 8
+    jal   {KROM:#x}
+    or    $a0, $a0, $t1
+    or    $t9, $v0, $zero
+    addiu $s2, $s2, 2
+    addiu $t8, $zero, 2             # 2 bytes per row, 2 bits per pixel
+wd_draw:
+    addiu $t7, $zero, 15            # rows
+wd_row:
+    or    $t5, $zero, $zero         # 8 pixels, 4bpp
+    or    $t6, $zero, $zero         # nibble shift
+    or    $t4, $t8, $zero           # bytes left in this row
+wd_byte:
+    lbu   $t3, 0($t9)
+    addiu $t9, $t9, 1
+    addiu $t2, $zero, 0x80          # bit mask, MSB = left
+wd_px:
+    and   $a1, $t3, $t2
+    srl   $t2, $t2, 1
+    addiu $a2, $zero, 1
+    beq   $t8, $a2, wd_one
+    sltu  $a1, $zero, $a1           # first bit
+    and   $a3, $t3, $t2
+    srl   $t2, $t2, 1
+    sltu  $a3, $zero, $a3           # second bit
+    bne   $a1, $a3, wd_nib
+    addiu $a2, $zero, 0xA           # mixed: grey
+wd_one:
+    addiu $a2, $zero, 0xE
+    beq   $a1, $zero, wd_nib
+    nop
+    addiu $a2, $zero, 2
+wd_nib:
+    sllv  $a2, $a2, $t6
+    or    $t5, $t5, $a2
+    bne   $t2, $zero, wd_px
+    addiu $t6, $t6, 4
+    addiu $t4, $t4, -1
+    bne   $t4, $zero, wd_byte
+    nop
+    sw    $t5, 0($s0)
+    addiu $t7, $t7, -1
+    bne   $t7, $zero, wd_row
+    addiu $s0, $s0, 4
+    beq   $zero, $zero, wd_upload
+    nop
+wd_blank:
+    addiu $a0, $sp, 0x18
+    addiu $a1, $zero, 0xEE
+    jal   0x801ACE00                # memset(buffer, 0xEE, 0x40)
+    addiu $a2, $zero, 0x40
+wd_upload:
+    addiu $a0, $sp, 0x10
+    jal   {LOAD_IMAGE:#x}           # LoadImage(rect, buffer)
+    addiu $a1, $sp, 0x18
+    lhu   $v0, 0x10($sp)
+    addiu $s3, $s3, 1
+    addiu $v0, $v0, 2               # next cell: 8 px
+    sh    $v0, 0x10($sp)
+    slti  $v0, $s3, {WEAPON_CELLS}
+    bne   $v0, $zero, wd_cell
+    nop
+    j     0x8018CB50
+    nop
+"""
+
 # (start, end, expected retail first instruction, new code)
 PATCHES = [
     # narration typewriter
@@ -287,6 +384,8 @@ PATCHES = [
     (0x80183034, 0x80183038, "slti $v0, $s2, 0xf", "slti $v0, $s2, 0x1e"),
     (0x80183040, 0x80183044, "addiu $s2, $zero, 1", "addiu $s2, $zero, 2"),
     (0x80183044, 0x80183048, "addu $v0, $s5, $s2", "addiu $v0, $s5, 1"),    # next line (retail reused s2 = 1)
+    # weapon name renderer
+    (0x8018C8E4, 0x8018CB50, "addu $s1, $v0, $zero", WEAPON_DRAW),
 ] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
 
 
