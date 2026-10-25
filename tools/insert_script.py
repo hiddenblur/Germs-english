@@ -161,6 +161,8 @@ def apply(root, tr):
             if e["cmd"] is not None:
                 cmd_edits[e["offset"]] = (sid, raw)
             else:
+                if sid in layout.TIMED:
+                    raw += layout.TIMED_MARKER      # keeps the retail typing pace
                 write_in_place(bufs[e["file"]], e["offset"], raw, e["capacity"])
         except ValueError as err:
             problems.append((sid, str(err)))

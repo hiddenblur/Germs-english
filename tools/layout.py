@@ -16,6 +16,12 @@ ROWS_PER_PAGE = 3
 # SCE.S:59008: opening narration, 5 pages on a black screen, then the office window.
 SCENE_SPLITS = {"SCE.S:59008": 15}
 
+# Narration that runs against a scene timer and must keep the retail typing pace. The
+# inserter writes TIMED_MARKER after their terminator; the typewriter wrapper in
+# tools/patch_exe.py checks for it. The ending is included as a precaution (unverified).
+TIMED = {"SCE.S:59008", "SCE.S:59808"}
+TIMED_MARKER = bytes([0, 0xFE, 0xFF])     # terminator, then the marker
+
 
 def char_rows(raw, width=WIDTH):
     """Return [(byte offset, row)] for every visible character."""

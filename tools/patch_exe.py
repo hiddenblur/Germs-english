@@ -159,6 +159,83 @@ NARRATION_DRAW = glyph_routine(
     j     0x80182BEC
     sh    $t1, 0x220($gp)""")
 
+# Typewriter speed. English has about twice the glyphs of the Japanese, so one glyph per
+# frame was too slow. Callers of 0x80182860 go through this wrapper instead. It draws up to
+# TYPEWRITER_SPEED glyphs per call, or finishes the page while Circle is held. It stops as
+# soon as the typewriter returns non-zero (page full, string done). Circle comes from the raw
+# pad buffer the BIOS fills at 0x80007570: byte 0 = 0 when a pad answered, byte 3 bit 5 = Circle
+# (active low). The wrapper lives in the free tail of the narration block.
+#
+# Timed narration: the opening runs alongside a timer that brings in the office. If the
+# text finishes early, the office never loads (the same hang as a too-short translation).
+# Such strings keep the retail pace: the inserter writes the marker FE FF right after their
+# terminator (layout.TIMED), and the retail Japanese ones are recognised by length.
+TYPEWRITER = 0x80182860
+TYPEWRITER_SPEED = 3
+NARRATION_BLOCK = 0x801829DC
+TYPEWRITER_CALLERS = [0x80183588, 0x80183C18, 0x80183E40, 0x801842C0, 0x801843EC]
+TIMED_MARKER = (0xFE, 0xFF)
+RETAIL_TIMED_LENGTHS = (567, 495)        # SCE.S:59008 opening, SCE.S:59808 ending
+WRAPPER = f"""
+    addiu $sp, $sp, -32
+    sw    $ra, 28($sp)
+    sw    $s0, 24($sp)
+    sw    $s1, 20($sp)
+    sw    $s2, 16($sp)
+    or    $s1, $a0, $zero
+    or    $s2, $a1, $zero
+    addiu $s0, $zero, 1             # timed narration: retail pace, no skipping
+    lh    $t3, 0x21E($gp)           # string length
+    addiu $t7, $zero, {RETAIL_TIMED_LENGTHS[0]}
+    beq   $t3, $t7, w_loop
+    addiu $t7, $zero, {RETAIL_TIMED_LENGTHS[1]}
+    beq   $t3, $t7, w_loop
+    addu  $t4, $s1, $t3
+    lbu   $t5, 1($t4)               # bytes after the terminator
+    lbu   $t6, 2($t4)
+    addiu $t7, $zero, {TIMED_MARKER[0]}
+    bne   $t5, $t7, w_fast
+    addiu $t7, $zero, {TIMED_MARKER[1]}
+    beq   $t6, $t7, w_loop
+    nop
+w_fast:
+    addiu $s0, $zero, {TYPEWRITER_SPEED}
+    lui   $t0, 0x8000
+    lbu   $t1, 0x7573($t0)          # buttons byte 2 (active low)
+    lbu   $t2, 0x7570($t0)          # pad status: 0 = answered
+    nop
+    andi  $t1, $t1, 0x20            # Circle (0 = held)
+    or    $t1, $t1, $t2             # held only if a pad answered too
+    bne   $t1, $zero, w_loop
+    nop
+    addiu $s0, $zero, 200           # held: finish the page now
+w_loop:
+    or    $a0, $s1, $zero
+    jal   {TYPEWRITER:#x}
+    or    $a1, $s2, $zero
+    addiu $s0, $s0, -1
+    bne   $v0, $zero, w_done        # page full or string done: stop for this frame
+    nop
+    bne   $s0, $zero, w_loop
+    nop
+w_done:
+    lw    $ra, 28($sp)
+    lw    $s0, 24($sp)
+    lw    $s1, 20($sp)
+    lw    $s2, 16($sp)
+    jr    $ra
+    addiu $sp, $sp, 32
+"""
+
+
+def narration_block():
+    """The glyph routine, then the typewriter wrapper right after it."""
+    return NARRATION_DRAW + WRAPPER
+
+
+TYPEWRITER_WRAPPER = NARRATION_BLOCK + len(asm(NARRATION_DRAW, NARRATION_BLOCK))
+
+
 # Whole-string renderer 0x80182518 (menus/choices): draws the string at once into a
 # cleared window. s2 col, s4 row, s3 index, fp string, s6 window, row limit at
 # 0x98(sp). Entry at 0x80182604 with a1 = char pointer; loop test at 0x80182824.
@@ -205,7 +282,7 @@ PATCHES = [
     # narration typewriter
     (0x801828E8, 0x801828EC, "slti $v0, $v0, 0x10", "slti $v0, $v0, 0x20"),
     (0x801829A8, 0x801829AC, "addiu $v0, $v0, 1", "addiu $v0, $v0, 2"),
-    (0x801829DC, 0x80182BEC, "addiu $s0, $sp, 0x18", NARRATION_DRAW),
+    (NARRATION_BLOCK, 0x80182BEC, "addiu $s0, $sp, 0x18", narration_block()),
     (0x80182C40, 0x80182C44, "slti $v0, $v0, 0x10", "slti $v0, $v0, 0x20"),
     (0x80182CD0, 0x80182CD4, "slti $v0, $v0, 0x10", "slti $v0, $v0, 0x20"),
     # whole-string menu renderer
@@ -221,7 +298,7 @@ PATCHES = [
     (0x80183034, 0x80183038, "slti $v0, $s2, 0xf", "slti $v0, $s2, 0x1e"),
     (0x80183040, 0x80183044, "addiu $s2, $zero, 1", "addiu $s2, $zero, 2"),
     (0x80183044, 0x80183048, "addu $v0, $s5, $s2", "addiu $v0, $s5, 1"),    # next line (retail reused s2 = 1)
-]
+] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
 
 
 def apply(exe):

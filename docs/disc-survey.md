@@ -122,6 +122,23 @@ the page origin (x, y).
 | `0x80182D34` | 4-line panel (caller `0x80183778`: three struct strings + one sprintf line). Lines 0-1 centred, lines 2+ start at col 1 and wrap at 15. Line y from the table at `0x801D76A4` (3, 21, 39, 57, 74, 91). Composites onto the background via StoreImage `0x801B0694` | `s2` col, `s5` line, `s7` line y, `s3` index, `s6` window | **patched**, emulator-tested only (screen not found yet) |
 | `0x8018C864` | glyphs from a struct (`+4`), 8x15 rects with its own 2/`0xE` pixel values | | not yet (never seen firing) |
 
+## Typewriter speed and the timed opening
+
+- The text command handler (state machine around `0x80183800`) calls the typewriter once per frame.
+  On a non-zero return (page full or string done) it waits on the `gp+0x222` timer, and when a page
+  is full (`row == 3`) it clears the window and continues. Nothing counts pages.
+- The office fade-in during the opening runs on **its own timer**. If the opening text finishes
+  before then, the office never loads. That caused both the short-translation hang and a hang with
+  faster typing. The "15 rows" rule is just how much text the retail pace covers in that time.
+- `tools/patch_exe.py` redirects all 5 typewriter calls to a wrapper (after the narration glyph
+  routine). It draws 3 glyphs per frame, or a whole page while Circle is held. Timed narration keeps
+  the retail pace: strings followed by the marker `FE FF` after their terminator (written by the
+  inserter for `layout.TIMED`), or the retail opening/ending recognised by length (567, 495).
+- Controller: the BIOS fills a raw pad buffer at `0x80007570` (byte 0 = 0 when a pad answered,
+  bytes 2-3 buttons active low; Circle = byte 3 bit 5). The game's own held-buttons word is at
+  `0x801E6DA0` (Square = `0x0080`).
+- Still to check live: the faster typing in normal dialogue, and Circle finishing a page.
+
 ## Computer screens: text is images (confirmed live, 2026-10-25)
 
 The in-office computer (desk prompt, then Down x2 to the blue icon, Circle for the inbox, Circle to
