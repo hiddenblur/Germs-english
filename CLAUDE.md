@@ -27,3 +27,5 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
   `,` = line break, other ASCII = colour (`byte - 0x30`). See the survey doc before changing the encoding.
 - Record new findings (addresses, formats) in `docs/` as they are confirmed, and mark anything unconfirmed.
 - Python 3 standard library plus `capstone` for disassembly. Debug in PCSX-Redux or DuckStation.
+- Tests: `python -m unittest discover tests` (needs `extracted/` and the script dump). The SCE.S
+  rebuild must stay byte-identical when nothing is translated.

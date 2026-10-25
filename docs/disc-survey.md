@@ -46,13 +46,42 @@ argc null-terminated string args, zero-padded to a 4-byte boundary
 - Opcode `0x05` is the only one carrying text (2,185 strings), with the text always in arg 0.
   - flag 1, argc 6: menu/choice entries (text, then numeric args).
   - flag 0, argc 2: dialogue/narration.
-- Commands seem to come in groups that start with a u32 count. Unconfirmed: what sits between groups
-  (e.g. `84 00 00 00 04 00 00 00 ff ff ...`), and how AREA chunks and the 2 KB directory headers
-  index them. This must be worked out before strings can grow.
-- **No slack:** every command string fills its command exactly (capacity = length + 1, rounded to 4).
-  Half-width English is about 1 byte per character against 2 for Japanese, so many lines may fit in
-  the same bytes. Longer ones need the command's size field rewritten and everything after it shifted,
-  which means finding every offset that points past it.
+- The u32 after flag is a parameter (e.g. `7`, `0x86`), not always zero.
+- **No slack inside commands:** every string fills its command exactly. Growth is absorbed by the
+  ASET padding (see below).
+
+## SCE.S container (confirmed: parse + rebuild is byte-identical, `tools/sce.py`)
+
+```
+EXE scene table   u32[24] at FILE+0x67F80 (RAM 0x801D7780): byte offset of each scene in SCE.S.
+                  The RES.R block table sits just before it (RAM 0x801D7744, u32[15]).
+scene             DIR sector (0x800): 24-byte entries (offset from scene, size, a, b, c, d), ended by
+                  a zero entry. Entries are contiguous from +0x800. Unlisted AREA chunks follow
+                  until the next scene. All 24 scenes tile exactly.
+  MIDI / VABH     sound data (scene 0 MIDI, others VAB banks), kept raw.
+  AREA            sector 0: "AREA", 0x7F8, 12-byte trigger entries (not decoded).
+                  Then sub-chunks "TAG" u32 size payload, until the next AREA or scene end:
+    ASET          event records chained by size, then zero padding (16..2040 bytes per ASET).
+    ENMY, ACTR    kept raw (likely enemy and actor placement).
+record            u32 size (including itself) | 0x38-byte header (u16 event id, u16 flag...) |
+                  u32 command count | commands.
+```
+
+- 24 scenes, 84 AREAs, 9,693 commands. Text is only ever opcode 0x05, arg 0.
+- Nothing points into records: record offsets appear in the AREA headers, ENMY or ACTR no more often
+  than chance. Event ids are not positional, so the game presumably walks the chain by id.
+- **Resizing rules** (as implemented in `tools/insert_script.py`):
+  1. A changed command gets new size fields (command and record). Its ASET keeps its size while the
+     records still fit with at least 16 zero bytes after them.
+  2. Otherwise the ASET (so the AREA) grows by whole sectors. Later chunks in the scene move (DIR
+     entries rewritten), later scenes move (EXE scene table rewritten), and SCE.S grows.
+- **Unverified at runtime:**
+  - Scene load buffer. The largest retail scene is 0x76000 bytes, and growth may overflow whatever
+    buffer the game loads scenes into. Find the load routine (reads of the scene table at
+    0x801D7780) and its size limit.
+  - Disc rebuild after SCE.S grows. The EXE holds no hardcoded LBAs for SCE.S or the files after it,
+    so files are probably found by name, but this needs checking in a debugger.
+  - The DIR entry fields a..d and the record header fields are kept as-is. Their meaning is unknown.
 - Other text in SCE.S (454 strings: character names, profiles, unit names) sits in fixed fields
   outside commands. RES.R holds item and food names (81). The EXE holds 89 system/menu strings.
 
