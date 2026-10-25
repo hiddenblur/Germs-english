@@ -889,5 +889,170 @@
     "align": "center"
    }
   ]
+ },
+ "RES.R@8A01C": {
+  "note": "Map shop location list",
+  "regions": [
+   {
+    "x": 0,
+    "y": 0,
+    "w": 64,
+    "h": 16,
+    "text": "My Office",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 16,
+    "w": 64,
+    "h": 16,
+    "text": "Cathedral",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 32,
+    "w": 64,
+    "h": 16,
+    "text": "Coal Mine",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 48,
+    "w": 64,
+    "h": 16,
+    "text": "Central Stn",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 64,
+    "w": 64,
+    "h": 16,
+    "text": "Fujita House",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 80,
+    "w": 64,
+    "h": 16,
+    "text": "Grand Stn.",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 96,
+    "w": 64,
+    "h": 16,
+    "text": "Hospital",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 112,
+    "w": 64,
+    "h": 16,
+    "text": "Indenco Net",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 128,
+    "w": 64,
+    "h": 16,
+    "text": "Power Stn.",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 144,
+    "w": 64,
+    "h": 16,
+    "text": "Warehouses",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 160,
+    "w": 64,
+    "h": 16,
+    "text": "Psychics",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 176,
+    "w": 64,
+    "h": 16,
+    "text": "Old Man's",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 192,
+    "w": 64,
+    "h": 16,
+    "text": "Crop Circle",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 208,
+    "w": 64,
+    "h": 16,
+    "text": "Hotel",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 224,
+    "w": 64,
+    "h": 16,
+    "text": "Gate #2",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 0,
+    "y": 240,
+    "w": 64,
+    "h": 16,
+    "text": "Whole Town",
+    "ink": 2,
+    "bg": 0,
+    "align": "center"
+   }
+  ]
  }
 }
