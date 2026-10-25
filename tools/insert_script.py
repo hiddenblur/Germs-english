@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script dir
+import images
 import layout
 import sce
 import windows
@@ -140,8 +141,11 @@ def apply(root, tr):
     (id or area, message). Nothing is valid to build while problems is non-empty."""
     files = root / "files"
     dumps = load_dumps(root)
+    image_tr = {sid: v for sid, v in tr.items() if "@" in sid}      # text stored as images
+    tr = {sid: v for sid, v in tr.items() if "@" not in sid}
     problems = [(sid, "unknown id") for sid in sorted(set(tr) - set(dumps))]
     bufs = {name: bytearray((files / name).read_bytes()) for name in ("SCE.S", "RES.R", "SLPS_021.07")}
+    images.apply(bufs["RES.R"], image_tr, problems)
 
     # 1. strings outside commands go in place, before SCE.S is parsed
     cmd_edits = {}

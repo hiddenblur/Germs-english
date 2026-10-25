@@ -46,6 +46,22 @@ Widths are in half-cells: one English character = 1, one Japanese character = 2.
 **The opening narration (`SCE.S:59008`)** is shown in two scenes: the first 15 wrapped lines on
 a black screen, the rest in the office. It must run past 15 lines.
 
+## Text in images (the computer: mail pages and inbox rows)
+
+The computer's mails are pictures, not text, so they have their own sheet, `img`. Its `ja` column is a
+path to a PNG of the original (`sheets/images/RES.R_<offset>.png`, shown at 2x). After `import` and
+`export`, each translated row also gets a preview of the English as it will look in game
+(`RES.R_<offset>.en.png`).
+
+- **mail page** (79): up to 8 lines of 226 px, word-wrapped. One image is one page; longer mails
+  continue on the next page(s).
+- **inbox row** (32): `From | Subject`, one line each (From up to 78 px, Subject up to 137 px).
+  The checkbox and frame are kept.
+
+English is drawn with the project's own pixel font (`tools/font.py`: printable ASCII, roughly
+5 px wide, plus 1 px between letters). Colours come from each image's own palette. `check`
+reports text that doesn't fit, in pixels.
+
 ## Space
 
 Script strings can grow, but each script area has a fixed amount of free space, and the disc

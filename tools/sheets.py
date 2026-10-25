@@ -21,6 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script dir
+import images
 import insert_script
 import sce
 import windows
@@ -116,7 +117,30 @@ def export():
                 en, note = tr.get(e["id"], ("", ""))
                 w.writerow([e["id"], windows.classify(e), limit_text(e, budgets, areas),
                             windows.ja_for_sheet(e["ja"]), en, note])
-    print(f"wrote {len(groups)} sheets to {SHEETS}")
+    export_images(tr)
+    print(f"wrote {len(groups) + 1} sheets to {SHEETS}")
+
+
+def export_images(tr):
+    """img.csv: one row per text image. ja points at a PNG of the original; translated
+    rows also get a preview PNG of the English as it will look in game."""
+    res = (EXTRACTED / "files" / "RES.R").read_bytes()
+    folder = SHEETS / "images"
+    folder.mkdir(exist_ok=True)
+    with open(SHEETS / "img.csv", "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(COLUMNS)
+        for sid, kind, t in images.text_images(res):
+            name = sid.replace("@", "_")
+            images.export_png(t, folder / f"{name}.png")
+            en, note = tr.get(sid, ("", ""))
+            if en:
+                try:
+                    t.pixels = images.render(t, en)
+                    images.export_png(t, folder / f"{name}.en.png")
+                except ValueError as err:
+                    note = f"{note} [does not fit: {err}]".strip()
+            w.writerow([sid, kind, images.limit_text(kind), f"images/{name}.png", en, note])
 
 
 def import_():
@@ -167,6 +191,9 @@ def check():
     for group, e in entries():
         total[group] += 1
         done[group] += e["id"] in tr
+    for sid, kind, _ in images.text_images(bytes(bufs["RES.R"])):
+        total["img"] += 1
+        done["img"] += sid in tr
     for group in sorted(total):
         if done[group]:
             print(f"  {group:7} {done[group]:5}/{total[group]:<5}")
