@@ -26,6 +26,10 @@ python -I tools/sheets.py check       # every rule below, plus progress per shee
 | `{20}` | the game's full-cell (16 px) space |
 | `{col N}` | pad to half-column N |
 | `"` `'` | straight quotes and apostrophes from the BIOS font |
+| `%s` `%d` | the game's placeholders (item or place names, numbers); keep them, they stay plain ASCII |
+
+Leave `SLPS_021.07:C30` (`ジャーム／第%s日…`) untranslated. It looks like the memory-card save title,
+which the BIOS shows in its own Shift-JIS font, so half-width bytes would come out garbled there.
 
 The font has no `\` (it draws ¥) and no `~` (it draws an overline). Accented letters aren't
 available either.

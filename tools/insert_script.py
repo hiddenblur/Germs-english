@@ -35,7 +35,7 @@ import layout
 import sce
 import windows
 
-TOKEN = re.compile(r"\{([0-9])\}|\{([0-9a-fA-F]{2})\}|\{col (\d+)\}|(\n)|(.)", re.S)
+TOKEN = re.compile(r"\{([0-9])\}|\{([0-9a-fA-F]{2})\}|\{col (\d+)\}|(%[sd])|(\n)|(.)", re.S)
 
 
 def rom_has_glyph(code):
@@ -46,7 +46,10 @@ def rom_has_glyph(code):
 def encode(text, half=True):
     out = bytearray()
     quote_open = True
-    for colour, raw, col, newline, ch in TOKEN.findall(text):
+    for colour, raw, col, fmt, newline, ch in TOKEN.findall(text):
+        if fmt:
+            out += fmt.encode()                                 # sprintf placeholder stays ASCII
+            continue
         if col:
             pad = int(col) - layout.line_widths(bytes(out))[-1]
             if pad < 0 or (pad % 2 and not half):
