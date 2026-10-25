@@ -15,6 +15,19 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
 - `tools/`: Python tools. Run them from the repo root with `python -I tools/<name>.py ...`.
 - `docs/`: research notes. [docs/disc-survey.md](docs/disc-survey.md) covers the disc, text format and font.
 - `extracted/`: output of `tools/extract_disc.py` plus dumps (gitignored).
+- `translations/`: our English, as `{"<file>:<offset>": "text"}` maps (ids from the dump). These hold
+  no Japanese, so they are committed.
+- `build/`: inserter output and rebuilt disc images (gitignored).
+
+## Building a patched disc
+
+```
+python -I tools/insert_script.py extracted build translations/<file>.json
+python -I tools/build_disc.py "Germs - Nerawareta Machi (Japan).bin" extracted/manifest.json build "build/disc/<name>.bin"
+```
+
+`build_disc.py` keeps the original file layout. It refuses files that need more sectors than
+the original, so SCE.S must not grow (the inserter prints its sector delta).
 - The disc image (`*.bin` / `*.cue`) sits in the repo root and is gitignored.
 
 ## Conventions
