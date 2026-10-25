@@ -1,0 +1,9 @@
+# Copyrighted game data: never commit
+*.bin
+*.cue
+*.iso
+*.img
+extracted/
+build/
+
+__pycache__/
