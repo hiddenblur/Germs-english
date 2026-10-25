@@ -1,8 +1,8 @@
 {
- "SCE.S:59008": "...You think:\n\"This place is\nlike the bottom\nof a deep sea.\"\nSlowly you rise\nfrom the depths\nof the mind.",
- "SCE.S:5A9A8": " Desk         {3}○",
- "SCE.S:5AAA0": " Sofa         {3}○",
- "SCE.S:5AB9C": " Exit         {3}○",
- "SCE.S:5B180": " Menu         {3}○",
- "SCE.S:5B128": " Busy today?\n Need help?"
+ "SCE.S:59008": "...You think to yourself:\n\"This place is like the bottom\nof a deep sea.\" And slowly,\nyou begin to rise from the sea\nof the unconscious.",
+ "SCE.S:5A9A8": {"text": " Desk         {3}○", "width": "full"},
+ "SCE.S:5AAA0": {"text": " Sofa         {3}○", "width": "full"},
+ "SCE.S:5AB9C": {"text": " Exit         {3}○", "width": "full"},
+ "SCE.S:5B180": {"text": " Menu         {3}○", "width": "full"},
+ "SCE.S:5B128": {"text": " Busy today?\n Need help?", "width": "full"}
 }

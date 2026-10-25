@@ -21,6 +21,13 @@ def load(name, base=EXTRACTED / "files"):
     return (base / name).read_bytes()
 
 
+def encode_value(v):
+    """Encode a translation value the way insert_script.load_translations reads it."""
+    if isinstance(v, dict):
+        return encode(v["text"], v.get("width", "half") != "full")
+    return encode(v)
+
+
 def command_args(scenes):
     return [list(cmd.args) for *_, cmd in sce.iter_commands(scenes)]
 
@@ -53,7 +60,7 @@ class InsertTests(unittest.TestCase):
             for i, off in enumerate(cmd.arg_offsets):
                 sid = by_offset.get(off)
                 if sid in translations:
-                    want[k][i] = encode(translations[sid])
+                    want[k][i] = encode_value(translations[sid])
             k += 1
         self.assertEqual(command_args(scenes), want)
         # sound chunks are untouched
@@ -110,7 +117,8 @@ class InsertTests(unittest.TestCase):
 
     def test_large_growth_moves_later_scenes(self):
         first_scene = [e for e in self.dump if e["cmd"] and e["offset"] < sce.read_scene_table(self.exe)[1]]
-        tr = {e["id"]: "This line is far longer than the original Japanese text " * 3 for e in first_scene}
+        long_line = "This line is far longer than the original Japanese text " * 3
+        tr = {e["id"]: {"text": long_line, "width": "full"} for e in first_scene}
         new_sce, new_exe = self.run_insert(tr)
         self.check_output(tr, new_sce, new_exe)
         old_t, new_t = sce.read_scene_table(self.exe), sce.read_scene_table(new_exe)

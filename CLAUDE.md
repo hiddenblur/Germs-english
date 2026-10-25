@@ -23,6 +23,7 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
 
 ```
 python -I tools/insert_script.py extracted build translations/<file>.json
+python -I tools/patch_exe.py build/SLPS_021.07 build/SLPS_021.07
 python -I tools/build_disc.py "Germs - Nerawareta Machi (Japan).bin" extracted/manifest.json build "build/disc/<name>.bin"
 ```
 
@@ -39,6 +40,11 @@ the original, so SCE.S must not grow (the inserter prints its sector delta).
 - Text is Shift-JIS (decode with `cp932`). Single-byte control codes: space = one full 16 px cell,
   `,` = line break, other ASCII = colour (`byte - 0x30`). See the survey doc before changing the encoding.
 - Record new findings (addresses, formats) in `docs/` as they are confirmed, and mark anything unconfirmed.
-- Python 3 standard library plus `capstone` for disassembly. Debug in PCSX-Redux or DuckStation.
+- Python 3 standard library plus `capstone` (disassembly), `keystone-engine` (assembling EXE patches)
+  and `unicorn` (running patched code in tests). Debug in PCSX-Redux or DuckStation.
+- Translation values are half-width by default; use `{"text": ..., "width": "full"}` for text drawn
+  by a renderer that isn't patched yet (see the renderer table in docs/disc-survey.md).
+- EXE patches go in `tools/patch_exe.py`, each checking the retail instructions it replaces. Hand-fill
+  delay slots and load-delay slots (`.set noreorder`), and cover new code with a unicorn test.
 - Tests: `python -m unittest discover tests` (needs `extracted/` and the script dump). The SCE.S
   rebuild must stay byte-identical when nothing is translated.

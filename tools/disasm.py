@@ -22,5 +22,12 @@ if sys.argv[2] == "--callers":
 else:
     addr, count = int(sys.argv[2], 16), int(sys.argv[3])
     off = addr - LOAD
-    for ins in md.disasm(text[off:off + count * 4], addr):
-        print(f"{ins.address:08X}  {ins.mnemonic:8} {ins.op_str}")
+    for i in range(count):
+        a, word = addr + i * 4, text[off + i * 4:off + i * 4 + 4]
+        if len(word) < 4:
+            break
+        ins = next(md.disasm(word, a), None)   # one word at a time: data must not stop the dump
+        if ins:
+            print(f"{a:08X}  {ins.mnemonic:8} {ins.op_str}")
+        else:
+            print(f"{a:08X}  .word    0x{int.from_bytes(word, 'little'):08x}")

@@ -109,6 +109,41 @@ about 157 KB of Japanese text.
   Anything else is drawn as a blank cell. In-game: full-width `＂` (cp932 extension code) showed as
   a blank. The encoder now uses “ ” and ’, and rejects characters with no glyph.
 
+## Text renderers
+
+Four functions call the Kanji lookup. All draw 16x16 4bpp cells into a VRAM text page with
+LoadImage (`0x801B05A8`), using the window object from `0x801A44B8(gp+0x58)`, whose `+0x1C` points to
+the page origin (x, y).
+
+| Function | Used for | State | Half-width |
+|---|---|---|---|
+| `0x80182860` | narration typewriter: one glyph per call, 16x3 cells, then a page prompt via `0x801A4A68(0x40A, 1)` | gp `+0x218` col, `+0x21A` row, `+0x21C` colour, `+0x21E` length, `+0x220` index | **patched** |
+| `0x80182518` | whole-string renderer (menus/dialogue?), row limit at `0x98(sp)` | locals | not yet |
+| `0x80182D34` | similar whole-string renderer | locals | not yet |
+| `0x8018C864` | single glyph from a struct (+4/+5) | | not yet |
+
+## Half-width text (implemented for the narration renderer)
+
+- **Font:** BIOS charset 4, 8x15 ASCII `0x21-0x7F` at `0xBFC7F8DE`, 15 bytes per glyph (one byte per row,
+  MSB = left pixel; the spacing ends exactly at charset 5, `0xBFC7FE6F`). It is in every PS1 BIOS, so
+  no font data is needed in RAM, and the PC port gets it from the real BIOS. `\` draws as yen and `~` as
+  an overline.
+- **Encoding:** byte = ASCII + 0x80. `0xA0` is a half space (advance only); `0xA1-0xFE` are glyphs.
+  These bytes never drew anything in retail: they're half-width katakana or SJIS lead bytes the ROM
+  lookup doesn't cover. Exceptions: 2 retail strings (`SCE.S:1874FC`, `SCE.S:4B92FC`) contain stray
+  half-width katakana; they will be translated anyway.
+- **Layout:** columns count 8 px half-cells. Half-width advances 1, full-width SJIS 2, and the game's
+  `0x20` space 2, so untranslated Japanese looks exactly as before. Narration wraps at 32 half-cells.
+- **Patch** (`tools/patch_exe.py`): the 132-instruction unrolled glyph expansion at
+  `0x801829DC-0x80182BE8` becomes one 79-instruction loop handling both widths. Plus the wrap compares
+  (`0x801828E8`, `0x80182C40`, `0x80182CD0`: 16 -> 32) and the space advance (`0x801829A8`: 1 -> 2).
+- **Tested** by running the real patched EXE code under unicorn (`tests/test_halfwidth.py`), with a
+  synthetic ROM font and stubbed LoadImage. The same harness reproduces the retail renderer's uploads.
+- **Known limit:** a full-width character starting at half-column 31 overflows the page by 8 px.
+  Translated text shouldn't mix full-width characters in, so this is only an edge case.
+- **Not yet verified on a real BIOS:** the bit order of charset 4 (assumed MSB-left like the Kanji ROM).
+  If letters come out mirrored, flip the mask direction in `NARRATION_DRAW`.
+
 ## Implications for half-width English
 
 1. A font has to be supplied either way. The BIOS ROM has no half-width Latin glyphs, and the PC port can't ship the BIOS.

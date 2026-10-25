@@ -3,19 +3,22 @@
 Usage: python tools/insert_script.py <extract_dir> <out_dir> <translation.json>...
 
 Translation files are lists of dump entries (tools/dump_script.py) or
-{"id": "en text"} maps. Entries with an empty "en" are left alone. With no
-translated entries, the output is byte-identical to the input.
+{"id": text} maps, where text is a string (half-width) or
+{"text": "...", "width": "full"} for windows whose renderer isn't patched yet.
+Entries with an empty text are left alone. With no translated entries, the
+output is byte-identical to the input.
 
-Text syntax in "en" (until the half-width font hack exists, letters are written
-as full-width SJIS, as the game does for words like "Vitality"):
+Text syntax:
     {0}..{9}   colour change (the game's single-byte colour codes)
     newline    line break (the game's ",")
-    space      one full 16 px cell (the game's 0x20)
     {xx}       raw byte in hex, e.g. {81}{9b} for the circle button glyph
-Everything else is converted to its full-width form and encoded as Shift-JIS.
-" becomes alternating “ ”, and ' becomes ’ (their full-width forms are extension
-codes the BIOS font draws as blanks). Any character outside the BIOS Kanji ROM
-ranges is rejected.
+Half-width (needs tools/patch_exe.py): printable ASCII becomes byte + 0x80
+(0xA0 space, 0xA1-0xFE), drawn from the BIOS 8x15 font. \\ and ~ are rejected
+(that font draws them as yen and overline). Other characters become full-width SJIS.
+Full-width: space is one full 16 px cell (0x20); other ASCII becomes its full-width
+form. " becomes “ ” and ' becomes ’ (the full-width forms are extension codes the
+font draws as blanks).
+In both modes, a character the BIOS fonts can't draw is rejected.
 
 SCE.S command strings can change length freely; the archive is rebuilt and the
 EXE scene table patched. Strings outside commands (SCE.S fixed fields, RES.R,
@@ -37,10 +40,15 @@ def rom_has_glyph(code):
     return 0x8140 <= code <= 0x84BE or 0x889F <= code <= 0x9872
 
 
-def encode(text):
+def encode(text, half=True):
     out = bytearray()
     quote_open = True
     for colour, raw, newline, ch in TOKEN.findall(text):
+        if half and " " <= ch <= "~":
+            if ch in "\\~":
+                raise ValueError(f"{ch!r} has no glyph in the BIOS 8x15 font")
+            out.append(ord(ch) + 0x80)
+            continue
         if ch == '"':
             ch, quote_open = ("“" if quote_open else "”"), not quote_open
         elif ch == "'":
@@ -68,7 +76,10 @@ def load_translations(paths):
     for p in paths:
         data = json.loads(Path(p).read_text(encoding="utf-8"))
         items = data.items() if isinstance(data, dict) else ((e["id"], e.get("en", "")) for e in data)
-        tr.update({k: v for k, v in items if v})
+        for k, v in items:
+            text, half = (v["text"], v.get("width", "half") != "full") if isinstance(v, dict) else (v, True)
+            if text:
+                tr[k] = (text, half)
     return tr
 
 
@@ -94,10 +105,10 @@ def main():
 
     # 1. strings outside commands go in place, before SCE.S is parsed
     cmd_edits = {}
-    for sid, text in tr.items():
+    for sid, (text, half) in tr.items():
         e = dumps[sid]
         try:
-            raw = encode(text)
+            raw = encode(text, half)
         except ValueError as err:
             raise SystemExit(f"{sid}: {err}")
         if e["cmd"] is not None:
