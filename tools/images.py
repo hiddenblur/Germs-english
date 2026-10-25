@@ -93,7 +93,7 @@ def render_row(t, text):
 
 def render_regions(t, regions):
     """Screens with artwork around the text (Config, Status, map cards...): each region is
-    {x, y, w, h, text, ink, [bg], [align: left|center|right], [bold]}. The rectangle is
+    {x, y, w, h, text, ink, [bg], [align: left|center|right], [bold], [shadow]}. The rectangle is
     cleared to bg (default: its most common colour) and the text drawn in ink, centred
     vertically on the capitals."""
     px = bytearray(t.pixels)
@@ -115,6 +115,8 @@ def render_regions(t, regions):
         y = y0 + max(0, (h - 8) // 2)
         if y + font.HEIGHT > t.height:
             y = t.height - font.HEIGHT
+        if "shadow" in r:                           # drop shadow, one pixel down and right
+            font.draw(px, t.width, x + 1, y + 1, text, r["shadow"])
         for dx in ((0, 1) if bold else (0,)):
             font.draw(px, t.width, x + dx, y, text, r["ink"])
     return px

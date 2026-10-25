@@ -1127,5 +1127,1119 @@
     "bg": 14
    }
   ]
+ },
+ "RES.R@1A101C": {
+  "note": "Memory card load messages",
+  "regions": [
+   {
+    "x": 1,
+    "y": 0,
+    "w": 126,
+    "h": 16,
+    "text": "Use the D-pad to",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 16,
+    "w": 126,
+    "h": 16,
+    "text": "select record #",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 32,
+    "w": 126,
+    "h": 16,
+    "text": "and load. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 1,
+    "y": 64,
+    "w": 126,
+    "h": 16,
+    "text": "Loading data.",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 80,
+    "w": 126,
+    "h": 16,
+    "text": "Don't turn off power.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 96,
+    "w": 126,
+    "h": 16,
+    "text": "Don't reset.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 112,
+    "w": 126,
+    "h": 16,
+    "text": "Don't remove the card. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 1,
+    "y": 128,
+    "w": 126,
+    "h": 16,
+    "text": "No Memory Card is",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 144,
+    "w": 126,
+    "h": 16,
+    "text": "inserted in",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 160,
+    "w": 126,
+    "h": 16,
+    "text": "Memory Card slot 1. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 1,
+    "y": 192,
+    "w": 126,
+    "h": 16,
+    "text": "The Memory Card in",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 208,
+    "w": 126,
+    "h": 16,
+    "text": "Memory Card slot 1",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 224,
+    "w": 126,
+    "h": 16,
+    "text": "seems to be broken. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 0,
+    "w": 126,
+    "h": 16,
+    "text": "Failed to load",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 16,
+    "w": 126,
+    "h": 16,
+    "text": "the data. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 64,
+    "w": 126,
+    "h": 16,
+    "text": "The Memory Card in",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 80,
+    "w": 126,
+    "h": 16,
+    "text": "Memory Card slot 1",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 96,
+    "w": 126,
+    "h": 16,
+    "text": "is not formatted. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 128,
+    "w": 126,
+    "h": 16,
+    "text": "This Memory Card",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 144,
+    "w": 126,
+    "h": 16,
+    "text": "has no GERMS",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 160,
+    "w": 126,
+    "h": 16,
+    "text": "data on it. ",
+    "ink": 3,
+    "align": "right"
+   }
+  ]
+ },
+ "RES.R@1B201C": {
+  "note": "Memory card save messages",
+  "regions": [
+   {
+    "x": 1,
+    "y": 0,
+    "w": 126,
+    "h": 16,
+    "text": "Use the D-pad to",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 16,
+    "w": 126,
+    "h": 16,
+    "text": "select record #",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 32,
+    "w": 126,
+    "h": 16,
+    "text": "and save. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 1,
+    "y": 64,
+    "w": 126,
+    "h": 16,
+    "text": "Saving data.",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 80,
+    "w": 126,
+    "h": 16,
+    "text": "Don't turn off power.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 96,
+    "w": 126,
+    "h": 16,
+    "text": "Don't reset.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 112,
+    "w": 126,
+    "h": 16,
+    "text": "Don't remove the card. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 1,
+    "y": 128,
+    "w": 126,
+    "h": 16,
+    "text": "No Memory Card is",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 144,
+    "w": 126,
+    "h": 16,
+    "text": "inserted in",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 160,
+    "w": 126,
+    "h": 16,
+    "text": "Memory Card slot 1. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 1,
+    "y": 192,
+    "w": 126,
+    "h": 16,
+    "text": "The Memory Card in",
+    "ink": 3
+   },
+   {
+    "x": 1,
+    "y": 208,
+    "w": 126,
+    "h": 16,
+    "text": "Memory Card slot 1",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 1,
+    "y": 224,
+    "w": 126,
+    "h": 16,
+    "text": "seems to be broken. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 0,
+    "w": 126,
+    "h": 16,
+    "text": "Failed to save",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 16,
+    "w": 126,
+    "h": 16,
+    "text": "the data.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 32,
+    "w": 126,
+    "h": 16,
+    "text": "Please try saving",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 48,
+    "w": 126,
+    "h": 16,
+    "text": "again. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 64,
+    "w": 126,
+    "h": 16,
+    "text": "The Memory Card in",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 80,
+    "w": 126,
+    "h": 16,
+    "text": "Memory Card slot 1",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 96,
+    "w": 126,
+    "h": 16,
+    "text": "is not formatted.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 112,
+    "w": 126,
+    "h": 16,
+    "text": "Format it? ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 128,
+    "w": 126,
+    "h": 16,
+    "text": "Not enough free",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 144,
+    "w": 126,
+    "h": 16,
+    "text": "blocks to save.",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 160,
+    "w": 126,
+    "h": 16,
+    "text": "Insert another card or",
+    "ink": 3,
+    "align": "center"
+   },
+   {
+    "x": 129,
+    "y": 176,
+    "w": 126,
+    "h": 16,
+    "text": "erase unneeded data. ",
+    "ink": 3,
+    "align": "right"
+   },
+   {
+    "x": 129,
+    "y": 192,
+    "w": 126,
+    "h": 16,
+    "text": "Overwrite the",
+    "ink": 3
+   },
+   {
+    "x": 129,
+    "y": 208,
+    "w": 126,
+    "h": 16,
+    "text": "current data? ",
+    "ink": 3,
+    "align": "right"
+   }
+  ]
+ },
+ "RES.R@1AC81C": {
+  "note": "Memory card confirm buttons",
+  "regions": [
+   {
+    "x": 20,
+    "y": 64,
+    "w": 38,
+    "h": 16,
+    "text": "OK",
+    "ink": 3,
+    "bg": 8,
+    "align": "right"
+   },
+   {
+    "x": 80,
+    "y": 64,
+    "w": 28,
+    "h": 16,
+    "text": "Back",
+    "ink": 3,
+    "bg": 8
+   },
+   {
+    "x": 14,
+    "y": 128,
+    "w": 44,
+    "h": 16,
+    "text": "Retry",
+    "ink": 3,
+    "bg": 8,
+    "align": "right"
+   },
+   {
+    "x": 80,
+    "y": 128,
+    "w": 28,
+    "h": 16,
+    "text": "Back",
+    "ink": 3,
+    "bg": 8
+   },
+   {
+    "x": 80,
+    "y": 192,
+    "w": 28,
+    "h": 16,
+    "text": "Back",
+    "ink": 3,
+    "bg": 8
+   }
+  ]
+ },
+ "RES.R@1BD01C": {
+  "note": "Memory card confirm buttons",
+  "regions": [
+   {
+    "x": 20,
+    "y": 64,
+    "w": 38,
+    "h": 16,
+    "text": "OK",
+    "ink": 3,
+    "bg": 8,
+    "align": "right"
+   },
+   {
+    "x": 80,
+    "y": 64,
+    "w": 28,
+    "h": 16,
+    "text": "Back",
+    "ink": 3,
+    "bg": 8
+   },
+   {
+    "x": 14,
+    "y": 128,
+    "w": 44,
+    "h": 16,
+    "text": "Retry",
+    "ink": 3,
+    "bg": 8,
+    "align": "right"
+   },
+   {
+    "x": 80,
+    "y": 128,
+    "w": 28,
+    "h": 16,
+    "text": "Back",
+    "ink": 3,
+    "bg": 8
+   },
+   {
+    "x": 80,
+    "y": 192,
+    "w": 28,
+    "h": 16,
+    "text": "Back",
+    "ink": 3,
+    "bg": 8
+   }
+  ]
+ },
+ "RES.R@1AA01C": {
+  "note": "Memory card save slots",
+  "regions": [
+   {
+    "x": 44,
+    "y": 2,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 17,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 17,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 17,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 17,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 44,
+    "y": 34,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 49,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 49,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 49,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 49,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 44,
+    "y": 66,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 81,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 81,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 81,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 81,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 44,
+    "y": 98,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 113,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 113,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 113,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 113,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   }
+  ]
+ },
+ "RES.R@1BA81C": {
+  "note": "Memory card save slots",
+  "regions": [
+   {
+    "x": 44,
+    "y": 2,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 17,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 17,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 17,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 17,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 44,
+    "y": 34,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 49,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 49,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 49,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 49,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 44,
+    "y": 66,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 81,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 81,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 81,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 81,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 44,
+    "y": 98,
+    "w": 32,
+    "h": 12,
+    "text": "Save",
+    "ink": 3,
+    "bg": 8,
+    "align": "center"
+   },
+   {
+    "x": 12,
+    "y": 113,
+    "w": 21,
+    "h": 12,
+    "text": "Day",
+    "ink": 3,
+    "bg": 2
+   },
+   {
+    "x": 51,
+    "y": 113,
+    "w": 11,
+    "h": 12,
+    "text": ",",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 84,
+    "y": 113,
+    "w": 13,
+    "h": 12,
+    "text": "h",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   },
+   {
+    "x": 113,
+    "y": 113,
+    "w": 12,
+    "h": 12,
+    "text": "m",
+    "ink": 3,
+    "bg": 2,
+    "align": "center"
+   }
+  ]
+ },
+ "RES.R@33501C": {
+  "note": "Phone menu",
+  "regions": [
+   {
+    "x": 5,
+    "y": 2,
+    "w": 118,
+    "h": 14,
+    "text": "Save progress",
+    "ink": 1,
+    "bg": 2
+   },
+   {
+    "x": 5,
+    "y": 17,
+    "w": 113,
+    "h": 14,
+    "text": "so far",
+    "ink": 1,
+    "bg": 2,
+    "align": "right"
+   },
+   {
+    "x": 5,
+    "y": 34,
+    "w": 118,
+    "h": 14,
+    "text": "Send the car to",
+    "ink": 1,
+    "bg": 2
+   },
+   {
+    "x": 5,
+    "y": 50,
+    "w": 113,
+    "h": 14,
+    "text": "the office",
+    "ink": 1,
+    "bg": 2,
+    "align": "right"
+   },
+   {
+    "x": 5,
+    "y": 66,
+    "w": 118,
+    "h": 14,
+    "text": "Bring the car",
+    "ink": 1,
+    "bg": 2
+   },
+   {
+    "x": 5,
+    "y": 82,
+    "w": 113,
+    "h": 14,
+    "text": "nearby",
+    "ink": 1,
+    "bg": 2,
+    "align": "right"
+   },
+   {
+    "x": 5,
+    "y": 104,
+    "w": 118,
+    "h": 14,
+    "text": "Hang up",
+    "ink": 1,
+    "bg": 2
+   }
+  ]
+ },
+ "RES.R@8501C": {
+  "note": "HUD weapon legend",
+  "regions": [
+   {
+    "x": 9,
+    "y": 18,
+    "w": 29,
+    "h": 10,
+    "text": "Level",
+    "ink": 4,
+    "bg": 7,
+    "shadow": 9
+   },
+   {
+    "x": 9,
+    "y": 28,
+    "w": 29,
+    "h": 10,
+    "text": "Atk",
+    "ink": 4,
+    "bg": 7,
+    "shadow": 9
+   },
+   {
+    "x": 9,
+    "y": 38,
+    "w": 29,
+    "h": 10,
+    "text": "Aim",
+    "ink": 4,
+    "bg": 7,
+    "shadow": 9
+   },
+   {
+    "x": 9,
+    "y": 48,
+    "w": 29,
+    "h": 10,
+    "text": "Range",
+    "ink": 4,
+    "bg": 7,
+    "shadow": 9
+   }
+  ]
+ },
+ "RES.R@8901C": {
+  "note": "HUD clock",
+  "regions": [
+   {
+    "x": 0,
+    "y": 1,
+    "w": 17,
+    "h": 14,
+    "text": "Day",
+    "ink": 48,
+    "bg": 0
+   },
+   {
+    "x": 40,
+    "y": 1,
+    "w": 26,
+    "h": 14,
+    "text": "",
+    "ink": 48,
+    "bg": 0
+   },
+   {
+    "x": 38,
+    "y": 16,
+    "w": 16,
+    "h": 15,
+    "text": ":",
+    "ink": 48,
+    "bg": 0,
+    "align": "center"
+   },
+   {
+    "x": 80,
+    "y": 16,
+    "w": 16,
+    "h": 15,
+    "text": "",
+    "ink": 48,
+    "bg": 0
+   }
+  ]
+ },
+ "SCE.S@3801C": {
+  "note": "Weapon storage menu",
+  "regions": [
+   {
+    "x": 3,
+    "y": 11,
+    "w": 93,
+    "h": 19,
+    "text": " Store weapon",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 3,
+    "y": 31,
+    "w": 93,
+    "h": 19,
+    "text": " Take weapon",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
  }
 }
