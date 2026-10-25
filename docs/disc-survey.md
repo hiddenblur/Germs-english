@@ -98,6 +98,17 @@ about 157 KB of Japanese text.
 - Each glyph is 16x15 1bpp (30 bytes). The game expands it to a 4bpp 16x16 block (128 bytes) and uploads it to VRAM in a grid: x = base + col*4 VRAM words (16 px), y = base + row*16.
 - The Kanji lookup is called from 4 places: `0x8018263C`, `0x801829EC` and `0x80182E58`, which share the space/comma/colour handling above, and `0x8018C908`, a single-character case that hasn't been investigated yet.
 
+## Confirmed in emulator (test disc, 2026-10-24)
+
+- Full-width English inserted by `tools/insert_script.py` displays correctly.
+- The opening narration is the loose string `SCE.S:59008`, in scene 0's first chunk (tagged
+  `MIDI`, so that chunk holds more than music).
+- The narration window wraps automatically every **16 cells**, about 16 full-width letters per line.
+  Explicit `,` line breaks also work.
+- The ROM lookup draws only SJIS `0x8140-0x84BE` and `0x889F-0x9872` (from the disassembly).
+  Anything else is drawn as a blank cell. In-game: full-width `＂` (cp932 extension code) showed as
+  a blank. The encoder now uses “ ” and ’, and rejects characters with no glyph.
+
 ## Implications for half-width English
 
 1. A font has to be supplied either way. The BIOS ROM has no half-width Latin glyphs, and the PC port can't ship the BIOS.
