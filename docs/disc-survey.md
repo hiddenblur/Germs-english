@@ -122,6 +122,24 @@ the page origin (x, y).
 | `0x80182D34` | 4-line panel (caller `0x80183778`: three struct strings + one sprintf line). Lines 0-1 centred, lines 2+ start at col 1 and wrap at 15. Line y from the table at `0x801D76A4` (3, 21, 39, 57, 74, 91). Composites onto the background via StoreImage `0x801B0694` | `s2` col, `s5` line, `s7` line y, `s3` index, `s6` window | **patched**, emulator-tested only (screen not found yet) |
 | `0x8018C864` | glyphs from a struct (`+4`), 8x15 rects with its own 2/`0xE` pixel values | | not yet (never seen firing) |
 
+## Computer screens: text is images (confirmed live, 2026-10-25)
+
+The in-office computer (desk prompt, then Down x2 to the blue icon, Circle for the inbox, Circle to
+open a mail) draws **no text through the Kanji ROM**. Breakpoints on `0x801B1370` and `0x8018C864`
+never fire, and the mail text isn't in RAM or on disc as Shift-JIS.
+
+- The mail body is a pre-rendered **4bpp TIM, 240x128**, with a 16-colour palette (index 0 white ink,
+  index 14 dark background). It's loaded from RES.R into RAM (seen at `0x800ACD80`) and uploaded
+  as-is to VRAM x=960, y=0. Fujita's first mail is the TIM at `RES.R:0x1F5030` (rows match byte for byte).
+- RES.R holds 209 TIMs: 79 are 240x128 4bpp (mail bodies), 34 are 240x16 (likely mail-list rows),
+  plus UI panels and labels (green panels near `0x1E305C`, a label block near `0x1C223C`).
+- The inbox list is first uploaded as a blank 240x128 canvas (all `0xEE`) to VRAM x=960, y=256
+  (TIM in RAM at `0x800B463C`).
+
+Translating these means editing images: export each TIM, render English with our own pixel font
+(not the BIOS font, which can't be redistributed), convert back to 4bpp with the same palette, and
+write it in place at the same size.
+
 ## Half-width text (narration, menu and panel renderers)
 
 All three use one routine template (`glyph_routine` in `tools/patch_exe.py`), parameterised by
