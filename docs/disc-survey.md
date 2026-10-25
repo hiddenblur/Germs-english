@@ -29,6 +29,40 @@
 - Existing "English" text is written in full-width letters (e.g. `Ｖｉｔａｌｉｔｙ`).
 - Tools: `tools/find_text.py <file>` lists strings with their offsets.
 
+## Script commands (SCE.S)
+
+Confirmed by size-field arithmetic on every parsed command:
+
+```
+u32 size      bytes after this field (next command = offset + 4 + size)
+u16 opcode
+u16 flag
+u32 0
+u32 argc
+argc null-terminated string args, zero-padded to a 4-byte boundary
+```
+
+- All arguments are strings, numbers included (`"4"`, `"-1"`...).
+- Opcode `0x05` is the only one carrying text (2,185 strings), with the text always in arg 0.
+  - flag 1, argc 6: menu/choice entries (text, then numeric args).
+  - flag 0, argc 2: dialogue/narration.
+- Commands seem to come in groups that start with a u32 count. Unconfirmed: what sits between groups
+  (e.g. `84 00 00 00 04 00 00 00 ff ff ...`), and how AREA chunks and the 2 KB directory headers
+  index them. This must be worked out before strings can grow.
+- **No slack:** every command string fills its command exactly (capacity = length + 1, rounded to 4).
+  Half-width English is about 1 byte per character against 2 for Japanese, so many lines may fit in
+  the same bytes. Longer ones need the command's size field rewritten and everything after it shifted,
+  which means finding every offset that points past it.
+- Other text in SCE.S (454 strings: character names, profiles, unit names) sits in fixed fields
+  outside commands. RES.R holds item and food names (81). The EXE holds 89 system/menu strings.
+
+## Script dump
+
+`python -I tools/dump_script.py extracted` writes `extracted/script/<file>.json` (gitignored: it is
+game text). Each entry has `id`, `file`, `offset`, `length`, `capacity`, `cmd` (opcode, flag, args)
+for command strings, `ja` and an empty `en`. Totals: SCE.S 2,639 / RES.R 81 / EXE 89 strings,
+about 157 KB of Japanese text.
+
 ## Font
 
 - **The game has no font of its own.** It reads glyphs from the console BIOS Kanji ROM through the Psy-Q routine at `0x801B1370`, which calls BIOS `B(0x51) Krom2RawAdd` at `0x801B1A80`.
