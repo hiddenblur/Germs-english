@@ -42,6 +42,26 @@ def char_rows(raw, width=WIDTH):
     return out
 
 
+def line_widths(raw):
+    """Width in half-cells of each line (split at ',') of encoded text, before wrapping."""
+    widths, col, i = [], 0, 0
+    while i < len(raw):
+        b = raw[i]
+        if 0x80 <= b < 0xA0:
+            col, i = col + 2, i + 2
+        elif b >= 0xA0:
+            col, i = col + 1, i + 1
+        elif b == 0x20:
+            col, i = col + 2, i + 1
+        elif b == 0x2C:
+            widths.append(col)
+            col, i = 0, i + 1
+        else:
+            i += 1
+    widths.append(col)
+    return widths
+
+
 def check_scene_split(sid, raw):
     """Raise ValueError if a split string ends before its scene change."""
     rows = SCENE_SPLITS.get(sid)

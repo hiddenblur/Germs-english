@@ -32,8 +32,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script dir
 import layout
 import sce
+import windows
 
-TOKEN = re.compile(r"\{([0-9])\}|\{([0-9a-fA-F]{2})\}|(\n)|(.)", re.S)
+TOKEN = re.compile(r"\{([0-9])\}|\{([0-9a-fA-F]{2})\}|\{col (\d+)\}|(\n)|(.)", re.S)
 
 
 def rom_has_glyph(code):
@@ -44,7 +45,13 @@ def rom_has_glyph(code):
 def encode(text, half=True):
     out = bytearray()
     quote_open = True
-    for colour, raw, newline, ch in TOKEN.findall(text):
+    for colour, raw, col, newline, ch in TOKEN.findall(text):
+        if col:
+            pad = int(col) - layout.line_widths(bytes(out))[-1]
+            if pad < 0 or (pad % 2 and not half):
+                raise ValueError(f"text is already past column {col}")
+            out += b" " * (pad // 2) + b"\xA0" * (pad % 2)    # full cells: 2 columns per byte
+            continue
         if half and " " <= ch <= "~":
             if ch in "\\~":
                 raise ValueError(f"{ch!r} has no glyph in the BIOS 8x15 font")
@@ -73,73 +80,115 @@ def encode(text, half=True):
 
 
 def load_translations(paths):
+    """Read translation files (or every *.json in a folder): {id: (text, half)}."""
     tr = {}
-    for p in paths:
-        data = json.loads(Path(p).read_text(encoding="utf-8"))
+    files = []
+    for p in map(Path, paths):
+        files += sorted(p.glob("*.json")) if p.is_dir() else [p]
+    for p in files:
+        data = json.loads(p.read_text(encoding="utf-8"))
         items = data.items() if isinstance(data, dict) else ((e["id"], e.get("en", "")) for e in data)
         for k, v in items:
-            text, half = (v["text"], v.get("width", "half") != "full") if isinstance(v, dict) else (v, True)
+            text, half = (v.get("text", ""), v.get("width", "half") != "full") if isinstance(v, dict) else (v, True)
             if text:
                 tr[k] = (text, half)
     return tr
 
 
-def write_in_place(buf, off, raw, capacity, sid):
-    if len(raw) + 1 > capacity:
-        raise SystemExit(f"{sid}: {len(raw) + 1} bytes doesn't fit in-place capacity {capacity}")
-    buf[off:off + capacity] = raw + b"\0" * (capacity - len(raw))
-
-
-def main():
-    root, out_dir = Path(sys.argv[1]), Path(sys.argv[2])
-    tr = load_translations(sys.argv[3:])
-    files = root / "files"
+def load_dumps(root):
     dumps = {}
     for p in (root / "script").glob("*.json"):
         for e in json.loads(p.read_text(encoding="utf-8")):
             dumps[e["id"]] = e
-    unknown = set(tr) - set(dumps)
-    if unknown:
-        raise SystemExit(f"unknown ids: {sorted(unknown)[:10]}")
+    return dumps
 
+
+def prepare(entry, text, half=True):
+    """Lay out translated text for its window and encode it.
+
+    Label-style choices (retail: indent, label, padding, 3○) take just the label: the
+    indent, padding to the retail marker column and the marker are added here. Dialogue
+    is word-wrapped. Raises ValueError for text that can't be drawn or doesn't fit."""
+    kind = windows.classify(entry)
+    win = windows.WINDOWS[kind]
+    column = windows.marker_column(entry)
+    if half and column is not None and "○" not in text:
+        width = layout.line_widths(encode(text))[0]
+        if width > column - 2:
+            raise ValueError(f"choice label is {width} half-cells; at most {column - 2} fit before the ○")
+        text = "{20}" + text + "{col %d}{3}○" % column
+    if win.wrap:
+        text = windows.wrap(text, measure=lambda t: layout.line_widths(encode(t, half))[0])
+    raw = encode(text, half)
+    widest = max(layout.line_widths(raw))
+    if widest > win.width:
+        raise ValueError(f"{kind} line is {widest} half-cells wide, limit {win.width}")
+    layout.check_scene_split(entry["id"], raw)
+    return raw
+
+
+def write_in_place(buf, off, raw, capacity):
+    if len(raw) + 1 > capacity:
+        raise ValueError(f"{len(raw) + 1} bytes, but only {capacity} fit in place")
+    buf[off:off + capacity] = raw + b"\0" * (capacity - len(raw))
+
+
+def apply(root, tr):
+    """Apply translations to copies of the game files.
+
+    Returns (bufs, problems): bufs maps file name -> bytes, problems is a list of
+    (id or area, message). Nothing is valid to build while problems is non-empty."""
+    files = root / "files"
+    dumps = load_dumps(root)
+    problems = [(sid, "unknown id") for sid in sorted(set(tr) - set(dumps))]
     bufs = {name: bytearray((files / name).read_bytes()) for name in ("SCE.S", "RES.R", "SLPS_021.07")}
 
     # 1. strings outside commands go in place, before SCE.S is parsed
     cmd_edits = {}
     for sid, (text, half) in tr.items():
-        e = dumps[sid]
+        e = dumps.get(sid)
+        if e is None:
+            continue
         try:
-            raw = encode(text, half)
-            layout.check_scene_split(sid, raw)
+            raw = prepare(e, text, half)
+            if e["cmd"] is not None:
+                cmd_edits[e["offset"]] = (sid, raw)
+            else:
+                write_in_place(bufs[e["file"]], e["offset"], raw, e["capacity"])
         except ValueError as err:
-            raise SystemExit(f"{sid}: {err}")
-        if e["cmd"] is not None:
-            cmd_edits[e["offset"]] = (sid, raw)
-        else:
-            write_in_place(bufs[e["file"]], e["offset"], raw, e["capacity"], sid)
+            problems.append((sid, str(err)))
 
     # 2. command strings: parse, edit, rebuild
     scenes = sce.parse(bytes(bufs["SCE.S"]), bytes(bufs["SLPS_021.07"]))
-    old_table = sce.read_scene_table(bufs["SLPS_021.07"])
-    for *_, cmd in sce.iter_commands(scenes):
+    edited = {off: sid for off, (sid, _) in cmd_edits.items()}
+    for si, area, rec, cmd in sce.iter_commands(scenes):
         for i, off in enumerate(cmd.arg_offsets):
             if off in cmd_edits:
                 cmd.args[i] = cmd_edits.pop(off)[1]
-    if cmd_edits:
-        raise SystemExit(f"command strings not found: {[s for s, _ in cmd_edits.values()][:10]}")
+    problems += [(sid, "command string not found") for sid, _ in cmd_edits.values()]
+    for si, ai, over, offs in sce.aset_overflows(scenes):
+        sids = [edited[o] for o in offs if o in edited]
+        problems.append((f"scene {si} area {ai}",
+                         f"{over} bytes over its free space; shorten some of: {', '.join(sids[:8])}"
+                         + (" ..." if len(sids) > 8 else "")))
     sce_bytes, table = sce.build(scenes)
     bufs["SCE.S"] = bytearray(sce_bytes)
     bufs["SLPS_021.07"] = bytearray(sce.patch_exe(bufs["SLPS_021.07"], table))
+    return bufs, problems
 
+
+def main():
+    root, out_dir = Path(sys.argv[1]), Path(sys.argv[2])
+    tr = load_translations(sys.argv[3:])
+    bufs, problems = apply(root, tr)
+    if problems:
+        for where, msg in problems:
+            print(f"{where}: {msg}")
+        raise SystemExit(f"{len(problems)} problem(s); nothing written")
     out_dir.mkdir(parents=True, exist_ok=True)
     for name, buf in bufs.items():
         (out_dir / name).write_bytes(buf)
-    orig = (files / "SCE.S").stat().st_size
-    print(f"{len(tr)} strings inserted. SCE.S {orig:#x} -> {len(sce_bytes):#x} "
-          f"({(len(sce_bytes) - orig) // sce.SECTOR:+d} sectors)")
-    for i, (a, b) in enumerate(zip(old_table, table)):
-        if a != b:
-            print(f"  scene {i:2d} moved {a:#x} -> {b:#x}")
+    print(f"{len(tr)} strings inserted; all files keep their size")
 
 
 if __name__ == "__main__":

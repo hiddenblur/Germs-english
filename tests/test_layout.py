@@ -35,7 +35,7 @@ class LayoutTests(unittest.TestCase):
             layout.check_scene_split("SCE.S:59008", encode("Too short.\nTwo pages at most."))
 
     def test_committed_test_lines_pass(self):
-        tr = json.loads((ROOT / "translations" / "test_lines.json").read_text(encoding="utf-8"))
+        tr = json.loads((ROOT / "tests" / "fixtures" / "test_lines.json").read_text(encoding="utf-8"))
         layout.check_scene_split("SCE.S:59008", encode(tr["SCE.S:59008"]))
 
 

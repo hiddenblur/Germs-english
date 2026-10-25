@@ -15,20 +15,26 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
 - `tools/`: Python tools. Run them from the repo root with `python -I tools/<name>.py ...`.
 - `docs/`: research notes. [docs/disc-survey.md](docs/disc-survey.md) covers the disc, text format and font.
 - `extracted/`: output of `tools/extract_disc.py` plus dumps (gitignored).
-- `translations/`: our English, as `{"<file>:<offset>": "text"}` maps (ids from the dump). These hold
-  no Japanese, so they are committed.
+- `translations/`: our English, as `{"<file>:<offset>": "text"}` maps (ids from the dump), one file
+  per sheet. These hold no Japanese, so they are committed. Written by `tools/sheets.py import`.
+- `sheets/`: translator spreadsheets from `tools/sheets.py export` (gitignored: Japanese inside).
+  Workflow and rules: [docs/translating.md](docs/translating.md).
+- `tests/fixtures/test_lines.json`: the hand-made test translation used for test discs.
 - `build/`: inserter output and rebuilt disc images (gitignored).
 
 ## Building a patched disc
 
 ```
-python -I tools/insert_script.py extracted build translations/<file>.json
+python -I tools/sheets.py check
+python -I tools/insert_script.py extracted build translations
 python -I tools/patch_exe.py build/SLPS_021.07 build/SLPS_021.07
 python -I tools/build_disc.py "Germs - Nerawareta Machi (Japan).bin" extracted/manifest.json build "build/disc/<name>.bin"
 ```
 
-`build_disc.py` keeps the original file layout. It refuses files that need more sectors than
-the original, so SCE.S must not grow (the inserter prints its sector delta).
+`build_disc.py` keeps the original file layout. The inserter refuses any change that would grow
+SCE.S (each script area has fixed free space) and reports all problems at once, like `check`.
+Window rules (widths, wrapping, choice labels) live in `tools/windows.py`; `prepare()` in
+`insert_script.py` applies them.
 - The disc image (`*.bin` / `*.cue`) sits in the repo root and is gitignored.
 
 ## Conventions
