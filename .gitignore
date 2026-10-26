@@ -9,3 +9,8 @@ build/
 __pycache__/
 sheets/
 edits/
+psyq/
+*.whl
+tools/vendor/
+ghidra_*/
+objdiff-*.exe
