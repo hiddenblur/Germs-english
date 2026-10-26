@@ -9,6 +9,7 @@ A `/* cc-flags: ... */` comment in the first lines of the C file sets its flags 
 retail build were compiled with different ones). Each function in the C file is looked up in decomp/functions.txt ("name 0xADDRESS words").
 """
 import argparse
+import os
 import re
 import struct
 import subprocess
@@ -25,14 +26,30 @@ EXE = ROOT / "extracted" / "files" / "SLPS_021.07"
 EXE_BASE = 0x80170000 - 0x800
 
 
-def run(tool, *args, stdout=None):
-    r = subprocess.run([str(BIN / tool), *map(str, args)], capture_output=True, cwd=BIN)
+def run(tool, *args, stdout=None, exe=None, env=None):
+    r = subprocess.run([str(exe or BIN / tool), *map(str, args)], capture_output=True, cwd=BIN, env=env)
     if r.returncode:
         raise SystemExit(f"{tool} failed:\n{(r.stdout + r.stderr).decode('latin1')}")
     return r
 
 
-DEFAULT_FLAGS = "-O2 -fno-schedule-insns2"     # what the retail code was built with (docs/decomp-setup.md)
+DEFAULT_FLAGS = "-O2"     # gcc 2.8.1 -O2 -G8 reproduces the retail code (docs/decomp-setup.md)
+
+
+OLDGCC = ROOT / "tools" / "vendor" / "oldgcc" / "bin"
+# Compilers: the SDK's (gcc 2.95.2) or old-gcc builds of the psx variants (docs/decomp-setup.md).
+COMPILERS = {"sdk": BIN / "CC1PSX.EXE", "2.7.2": OLDGCC / "cc1-2.7.2.exe", "2.8.1": OLDGCC / "cc1-2.8.1.exe"}
+COMPILER = "sdk"
+
+
+def hoist_comm(path):
+    """ASPSX reads its input once, so `.comm` must come before the code that uses the symbol (it is then
+    small data, reached through $gp). The SDK's gcc writes it there; old gcc writes it at the end."""
+    lines = path.read_text().splitlines()
+    comm = [l for l in lines if re.match(r"\s*\.l?comm\s", l)]
+    rest = [l for l in lines if l not in comm]
+    at = next(i for i, l in enumerate(rest) if l.startswith("__gnu_compiled_c:")) + 1
+    path.write_text(chr(10).join(rest[:at] + comm + rest[at:]) + chr(10))
 
 
 def compile_c(src, flags=DEFAULT_FLAGS):
@@ -40,8 +57,14 @@ def compile_c(src, flags=DEFAULT_FLAGS):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         (tmp / "in.i").write_bytes(run("CPPPSX.EXE", src).stdout)
-        run("CC1PSX.EXE", "-quiet", *flags.split(), tmp / "in.i", "-o", tmp / "out.s")
-        run("ASPSX.EXE", "-q", tmp / "out.s", "-o", tmp / "out.obj")
+        if "-G" not in flags:
+            flags += " -G8"                           # ccpsx's default; old-gcc's 2.8.1 defaults to -G0
+        env = {**os.environ, "TMPDIR": str(tmp)}      # old-gcc's mips.c writes a temp file there
+        run("CC1PSX.EXE", "-quiet", *flags.split(), tmp / "in.i", "-o", tmp / "out.s", exe=COMPILERS[COMPILER], env=env)
+        if COMPILER != "sdk":
+            hoist_comm(tmp / "out.s")
+        gsize = flags.split("-G")[1].split()[0]         # ccpsx hands -G<n> to the assembler too
+        run("ASPSX.EXE", "-q", f"-G{gsize}", tmp / "out.s", "-o", tmp / "out.obj")
         data = (tmp / "out.obj").read_bytes()
     assert data[:3] == b"LNK", "unexpected object format"
     return psyqlib.parse_obj(data, 0)
@@ -126,7 +149,10 @@ def main():
     ap.add_argument("--flags", default=None, help="default: the `cc-flags:` comment in the file, else DEFAULT_FLAGS")
     ap.add_argument("--show", action="store_true", help="print both instruction streams")
     ap.add_argument("--which-flags", action="store_true", help="try several flag sets and list which match")
+    ap.add_argument("--cc1", choices=sorted(COMPILERS), default="2.8.1" if COMPILERS["2.8.1"].exists() else "sdk", help="which compiler (default: old-gcc 2.8.1 if built, else the SDK's)")
     args = ap.parse_args()
+    global COMPILER
+    COMPILER = args.cc1
     source = Path(args.source).resolve()
     if args.which_flags:
         found = {}
@@ -143,7 +169,7 @@ def main():
     if flags is None:
         m = re.search(r"cc-flags:[ 	]*(.+?)[ 	]*(\*/|$)", source.read_text()[:400], re.M)
         flags = m.group(1) if m else DEFAULT_FLAGS
-    print(f"# {source.name}: cc1psx {flags}")
+    print(f"# {source.name}: cc1 {COMPILER} {flags}")
     bad = 0
     for name, addr, words, ok, mine, theirs in compare(source, flags):
         if addr is None:
