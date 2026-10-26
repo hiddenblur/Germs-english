@@ -14,3 +14,9 @@ psyq/
 tools/vendor/
 ghidra_*/
 objdiff-*.exe
+decomp/asm/
+decomp/assets/
+decomp/include/
+decomp/build/
+decomp/*.ld
+decomp/undefined_*.txt
