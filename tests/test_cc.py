@@ -15,6 +15,7 @@ HAVE = ((ROOT / "psyq" / "bin" / "ASPSX.EXE").exists() and (ROOT / "tools" / "ve
 MATCHING = {
     "decomp/src/angle.c": ["norm_angle", "angle_quadrant"],
     "decomp/src/batch10.c": ["fn_801A6AC4", "fn_8017D0E0", "fn_8019A5D4"],
+    "decomp/src/batch11.c": ["fn_801AC278", "fn_801765BC", "fn_80186680", "fn_801A7BA4", "fn_8018A968", "fn_8018D200", "fn_8018A8CC", "fn_801A9070"],
     "decomp/src/batch3.c": ["fn_80199C68", "fn_80184160", "fn_80199CC0", "fn_801AC4A8", "fn_8017E544"],
     "decomp/src/batch4.c": ["fn_801AC500", "fn_80184100", "fn_801863B4", "fn_801A8F2C", "fn_8018655C"],
     "decomp/src/batch5.c": ["fn_80186718", "fn_801A39F0", "fn_801AC214", "fn_80186414", "fn_801A3C58", "fn_801841C4"],
