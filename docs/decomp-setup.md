@@ -369,3 +369,53 @@ Rules that matched stubborn functions (add to the ones above):
   `decomp/functions.txt`, and run `python -I tools/cc_check.py <file> --show`; `tools/variants.py` runs many
   candidates (see its docstring); parking is just moving the function into `decomp/wip/` and removing it from
   `functions.txt`.
+## More C: 153 functions (2026-10-27, second session)
+
+`decomp/src/batch13.c` adds 39 functions (all byte-identical, all in the PSYLINK link, 153 pinned in
+`tests/test_cc.py`). New rules, found by dumping RTL (`-dJ` gives the final jump pass, `-dd` the delay slots; run
+`cc1-2.8.1.exe` by hand with `TMPDIR` set) and by grids with `tools/variants.py`:
+
+- **Cheap grids pay off.** Declaration order, where an initialiser sits (`int i = 0;` at the top or inside the
+  `if`), statement order of a run of stores and `if (n) for (...)` against a bare `for` change the schedule and the
+  register numbers; a few dozen variants through `variants.search` solved `fn_80174B10`, `fn_8018C414` (store
+  order), `fn_8018748C` and others that hand edits did not.
+- **`g->arr[i]` against `p[0x17]`.** A loop over a struct with an array member (`g->arr[i]` where `arr` is at 0x5c)
+  gives the pointer that starts at `g` and a displacement of 0x5c (`lw a0,0x5c(s1)`, `move s1,s2`); `p[0x17]` with a
+  walking `p` gives `addiu s1,s2,0x5c`. Walking a struct array with `e++` and reading fields gives the `0x28(s0)`
+  offsets of the retail code (`fn_80176654`, `fn_8018F6E8`). `if (g->n) for (i = 0; i < g->n; i++)` is the
+  `beqz` + `blez` pair; a bare `for` is only the `blez`. Load the array pointer in the declaration (`e = g->arr`) when
+  the retail code loads it before the first branch.
+- **`unsigned short t` keeps the `andi`** in `(unsigned short)(t - 0xb4) < 0x28`; an `int` hides it
+  (`fn_80194B50`). `(unsigned)(t - 0x82) < 0x29` is the form without `andi`.
+- **Loops without loop optimization are backward `goto`s; `for (;;)` with `break`/`return` is optimized** and hoists
+  loop-invariant constants into registers (`addiu s2,zero,5` before the loop in `fn_80174A14`). Use the one the retail
+  code shows.
+- **A switch can hide a code block after the last `break`**: `fn_8018748C` has `c: fn_8018C2FC(1,1,1);` after
+  `default`, reached by `goto c` from `case 0`.
+- A constant `1` used in a stored field and in a switch compare is shared by CSE; the retail code (`fn_8018C414`) only
+  gets its own register for the stores when `t->ha = 1` is the first statement.
+- `short a` K&R parameters: `fn_8018AA00`, `fn_801A1FD4` copy in place; `int a` with `(short)a` casts leaves the
+  sign extension where it is used (`fn_80188C24`, `fn_801A5254`).
+- A `$gp` variable that holds a pointer is a plain definition (`struct S *gpd8;`), not an `extern` (an `extern` is
+  reached through `lui`); the retail symbol is read back from the relocations either way.
+- **Tables read as `(short)tab[i + 2]`** give `lh` on the word table with the address computed separately
+  (`fn_801A1FD4`, `fn_801A5CD4`); `*(short *)&tab[i + 2]` folds the offset.
+- `x % 10` with `int` `x` is the `mult`/`mfhi` sequence of `fn_801A5554`; `b * 60`, `h * 12500`, `v * 32000` give
+  the shift/add chains of `fn_801A6B50`.
+
+### The list-walking "find" family (still unmatched: 10 functions)
+
+`fn_801A4B18`, `fn_801A7C3C`, `fn_801A4A68`, `fn_80174CB8`, `fn_80185858`, `fn_801A4BC8`, `fn_801A43F4`, `fn_8018E610`,
+`fn_801A8000`/`fn_801A80CC`/`fn_801A8198`, `fn_8017CFE4`, `fn_80174D6C`/`fn_80174E60`, `fn_8017C9F8`, `fn_801A461C` all
+walk the doubly linked list at a `$gp` pointer with `fn_801CD000(list)` as the "step" and differ only in the test.
+What is established:
+- The loop is a backward `goto` (or `for (;;)` when a constant is hoisted); the step exit is `bnez v0,end; move v0,zero`
+  in retail, which comes from `r = fn_801CD000(s); v = 0; if ((short)r) goto done;` (the `v = 0` before the test ends in
+  the delay slot) or from a shared `zero:` label that reorg copies into the delay slot.
+- The final cross-jump pass (`toplev.c`: `jump_optimize (insns, 1, 1, 0)`, after the second scheduling pass) merges two
+  identical `v0 = 0; jump end` blocks and **keeps the later one** (jump.c walks forward and redirects the earlier jump).
+  Retail kept the first one in the functions with "zero path first" (`bnez v0,body; j end; move v0,zero`), so the
+  retail source must give the two exits different code at that point. Not found yet. In the functions with the zero
+  path last (`fn_8017C9F8`, `fn_801A461C`) a shared `zero: v = 0;` label before `done:` reproduces the layout and
+  leaves only register numbers.
+- Every variant tried is in `decomp/wip/near_miss.c`.
