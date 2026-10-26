@@ -369,9 +369,9 @@ Rules that matched stubborn functions (add to the ones above):
   `decomp/functions.txt`, and run `python -I tools/cc_check.py <file> --show`; `tools/variants.py` runs many
   candidates (see its docstring); parking is just moving the function into `decomp/wip/` and removing it from
   `functions.txt`.
-## More C: 153 functions (2026-10-27, second session)
+## More C: 161 functions (2026-10-27, second session)
 
-`decomp/src/batch13.c` adds 39 functions (all byte-identical, all in the PSYLINK link, 153 pinned in
+`decomp/src/batch13.c` adds 47 functions (all byte-identical, all in the PSYLINK link, 161 pinned in
 `tests/test_cc.py`). New rules, found by dumping RTL (`-dJ` gives the final jump pass, `-dd` the delay slots; run
 `cc1-2.8.1.exe` by hand with `TMPDIR` set) and by grids with `tools/variants.py`:
 
@@ -402,6 +402,21 @@ Rules that matched stubborn functions (add to the ones above):
   (`fn_801A1FD4`, `fn_801A5CD4`); `*(short *)&tab[i + 2]` folds the offset.
 - `x % 10` with `int` `x` is the `mult`/`mfhi` sequence of `fn_801A5554`; `b * 60`, `h * 12500`, `v * 32000` give
   the shift/add chains of `fn_801A6B50`.
+
+- **A local that lives in a stack slot is an inlined `static inline` helper.** `fn_8018D5F8` keeps the new node
+  pointer at `0x10($sp)` because the original called `fn_8018E03C`'s body as an inline function taking `short **a`:
+  `static inline void node_init(a, b) short **a; int b; {...}` and `short *p; node_init(&p, 0);` reproduces the slot
+  (the address-taken local), the loads after every call and the single saved register. If a value is spilled
+  although registers are free, look for an inlined callee that takes the address of a local.
+- A global used once as `g2d8w.w[0]` (not through a local pointer) gives `lui s1,hi; lw s0,lo(s1)` and the final
+  `sw zero,lo(s1)` (`fn_801A3B5C`); a `char *s0 = sym;` local gives `lui v0; addiu s0,v0,lo` while passing the
+  symbol as an expression twice gives `lui s0; addiu s0,s0,lo` (`fn_80192E18`).
+- A struct pointer built as `r = e + 6` next to the base `e` keeps both registers (`addiu a1,v1,0x18` and offsets
+  4, 8, 0xc from it), see `fn_80192E18`.
+- **Merged call tails:** two `fn_80183E88(strN, 1, -1, 8, -1, 0, 1)` arms are merged by the final cross-jump pass
+  into `lui a0; j common; addiu a0,a0,lo` (`fn_801A6968`); in a switch the `default: return 0;` goes first when the
+  retail code has the zero path before the arms. With three or more arms (`fn_80192F60`) our scheduling differs per arm
+  and only the `jal` tail is shared.
 
 ### The list-walking "find" family (still unmatched: 10 functions)
 
