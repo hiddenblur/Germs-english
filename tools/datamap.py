@@ -18,6 +18,7 @@ import lib_relink
 
 ROOT = lib_relink.ROOT
 EXE_BASE = lib_relink.EXE_BASE
+GP = 0x801DFC58
 SECTIONS = (".rdata", ".text", ".data", ".sdata", ".sbss", ".bss")
 SEARCH = {".rdata": (0x80170000, 0x80173054), ".data": (0x801D7330, 0x801DFE50), ".sdata": (0x801D7330, 0x801DFE50)}
 
@@ -61,6 +62,8 @@ def patch_values(o, addr, exe, section_at):
             value = (addr & 0xF0000000) | ((w & 0x3FFFFFF) << 2)
         elif tag == 16:
             value = w
+        elif tag == 100:                                     # GPREL16: signed offset from gp
+            value = GP + struct.unpack("<h", struct.pack("<H", w & 0xFFFF))[0]
         elif tag == 84:
             hi = next((exprs[j] for j in range(i - 1, -1, -1) if exprs[j][2] == 82 and exprs[j][3] == tree), None)
             if hi is None or hi[0] not in section_at:

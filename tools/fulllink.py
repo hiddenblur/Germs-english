@@ -19,6 +19,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import cc_check
+import cobjs
 import datamap
 import lib_relink
 import lnk
@@ -120,9 +122,37 @@ def symbol_addresses(objects, mods, placed, exe):
     return values
 
 
-def external_symbols(mods, values):
+def slot_objects(i, slot, exe, funcs):
+    """The objects of slot `i` in link order: glue objects, with the C function objects in the places of
+    their code. Returns [(file name, bytes)]. The first piece carries the slot's data and bss glue."""
+    text = slot.get(".text")
+    inside = sorted((f for f in funcs if text and text[0] <= f["addr"] < text[1]), key=lambda f: f["addr"])
+    rest = {k: v for k, v in slot.items() if k != ".text"}
+    out, pos, n = [], text[0] if text else 0, 0
+
+    def glue(part):
+        nonlocal n, rest
+        pieces = dict(rest, **part)
+        rest = {}
+        if pieces:
+            out.append((f"glue{i:03d}_{n}.obj", glue_object(pieces, exe)))
+            n += 1
+
+    for f in inside:
+        if f["addr"] < pos:
+            sys.exit(f"{f['name']} (0x{f['addr']:08X}) overlaps the previous function, which ends at 0x{pos:08X}")
+        if f["addr"] + f["size"] > text[1]:
+            sys.exit(f"{f['name']} runs past the end of the code gap at 0x{text[1]:08X}")
+        glue({".text": (pos, f["addr"])} if f["addr"] > pos else {})
+        out.append((f"c_{f['name']}.obj", f["obj"]))
+        pos = f["addr"] + f["size"]
+    glue({".text": (pos, text[1])} if text and pos < text[1] else {})
+    return out
+
+
+def external_symbols(mods, values, extra_defined=()):
     """Names no located module defines or allocates -> their address. Common symbols are the linker's job."""
-    defined = {n for k in mods.values() for n in k[1]["xdefs"]}
+    defined = {n for k in mods.values() for n in k[1]["xdefs"]} | set(extra_defined)
     out = {}
     for name, vals in values.items():
         if name not in defined:
@@ -138,6 +168,7 @@ def external_symbols(mods, values):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "build" / "link"))
+    ap.add_argument("--no-c", action="store_true", help="leave the game code as retail bytes (libraries only)")
     args = ap.parse_args()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -148,20 +179,29 @@ def main():
     for p in problems:
         print("note:", p)
     values = symbol_addresses(objects, mods, placed, exe)
+    funcs = []
+    if not args.no_c:
+        funcs, cvalues = cobjs.build()
+        table = cc_check.functions_table()
+        for f in funcs:                           # names the C refers to that are neither libraries nor C functions
+            for r in f["refs"]:
+                a = cobjs.address_of(r, cvalues, table)
+                if a is not None:
+                    values.setdefault(r, set()).add(a)
     slots = layout(objects, mods, placed)
     script = ["        org     0x80170000", "text    group", "bss     group   bss"]
     # SNMAIN refers to the start of .ctors and .dtors (empty sections between .text and .data)
     order = (".rdata", ".text", ".ctors", ".dtors", ".data", ".sdata", ".sbss", ".bss")
     script += [f"        section {s},{'bss' if s in ('.sbss', '.bss') else 'text'}" for s in order]
     for i in range(len(objects) + 1):
-        if slots[i]:
-            (out / f"glue{i:03d}.obj").write_bytes(glue_object(slots[i], exe))
-            script.append(f'        include "glue{i:03d}.obj"')
+        for name, blob in slot_objects(i, slots[i], exe, funcs):
+            (out / name).write_bytes(blob)
+            script.append(f'        include "{name}"')
         if i < len(objects):
             lib, mod = objects[i][2], objects[i][3]
             (out / f"{i:03d}_{mod}.obj").write_bytes(commons_as_xrefs(*mods[(lib, mod)]))
             script.append(f'        include "{i:03d}_{mod}.obj"')
-    script += [f"{n}\tequ\t0x{a:X}" for n, a in sorted(external_symbols(mods, values).items())]
+    script += [f"{n}\tequ\t0x{a:X}" for n, a in sorted(external_symbols(mods, values, [f["name"] for f in funcs]).items())]
     (out / "full.lnk").write_text("\n".join(script) + "\n")
     r = subprocess.run([str(PSYLINK), "/c", "/p", "/m", "@full.lnk,full.bin,full.sym,full.map"], cwd=out, capture_output=True, text=True)
     print("\n".join(l for l in r.stdout.splitlines() if l.strip())[-1500:])
@@ -171,6 +211,15 @@ def main():
     diff = [i for i in range(0, n, 4) if image[i:i + 4] != want[i:i + 4]]
     print(f"linked {len(image)} bytes, retail {len(want)}; {len(diff)} words differ"
           + (f", first at 0x{0x80170000 + diff[0]:08X}" if diff else ""))
+    where = {}
+    for i in diff:
+        a = 0x80170000 + i
+        name = next((f["name"] for f in funcs if f["addr"] <= a < f["addr"] + f["size"]), f"outside C (0x{a:08X})")
+        where[name] = where.get(name, 0) + 1
+    for name, count in where.items():
+        print(f"  {name}: {count} words differ")
+    c_words = sum(f["size"] for f in funcs) // 4
+    print(f"{len(funcs)} C functions ({c_words} code words) are linked from our compiled objects")
     sys.exit(1 if diff or len(image) < len(want) else 0)
 
 

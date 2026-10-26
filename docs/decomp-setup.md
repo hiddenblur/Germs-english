@@ -288,9 +288,28 @@ of game data (`lib_<LIB>_<MODULE>_<section>`, `game_<section>_<addr>`); the bss 
 would start past the end of the file), its per-module split is `fulllink.layout()`. `tools/lib_relink.py` is
 still the per-module check (303/303); `tools/fulllink.py` is the real link.
 
-**Where the game code is now:** still glue (retail bytes). To make the C count in this link, each function in
-`decomp/src` has to become its own object placed in its slot of the glue: split the compiled C object per
-function (text slice, its patches with new offsets, an `xdef`), add an `equ` for every data symbol the C
-declares (their addresses come from the retail words like the library externals), and cut the glue text at the
-function boundaries. Then the 5 non-matching functions show up as link diffs, and the next C function replaces
-more glue.
+## Our C in the link (2026-10-26)
+
+`python -I tools/fulllink.py` now links the compiled C too: **86 functions (1,620 code words) come from our
+compiled objects, 81 of them reproduce the retail image, and the differences are exactly the 5 known
+non-matching functions** (`fn_8018C50C` 10 words, `angle_quadrant` 16, `fn_801A3C58` 25, `fn_801AC214` 2,
+`fn_801AC4A8` 2). `--no-c` links the libraries only (0 words differ). `tests/test_build.py` pins both.
+
+- `tools/cobjs.py` turns each compiled C file into one Psy-Q object per function (the functions of a file sit at
+  different places of the EXE). The `.text` is cut at the function symbols, the patch records are rewritten with
+  names: `.text + n` (calls inside the file) names the callee, the rest already names an extern or a common
+  symbol. Written with `lnk.write_object` (now with xdefs, xrefs and patch expressions).
+- `fulllink.slot_objects` cuts the text glue at the function addresses and puts the object of each function
+  in its place; PSYLINK resolves the calls (`jal` to library modules, other C functions and glue code) and
+  the `$gp`-relative accesses of the `gp` variables (patch tag 100, GPREL16, base = start of `.sdata`).
+- **What is still taken from the retail words:** the addresses of the data symbols the C names (the `gNNN`
+  externs, the `gpNN` commons in `.sbss`) are read back from the retail relocations (`cobjs.address_of`,
+  `datamap.symbol_values`; names `fn_XXXXXXXX` carry their address). So a wrong data layout in the C would not
+  show up yet; calls and the encoding of every relocation do get checked by the linker. Real data symbols need
+  the C to define the game's data, which comes with the data split per game object.
+- Patch tags seen in the C objects: 74 (JMP26), 82/84 (HI16/LO16), 100 (GPREL16). Strings in `.rdata` and
+  other sections are refused by `cobjs.rewrite` until a function needs them.
+
+Next: more C (every new function in `decomp/src` + `decomp/functions.txt` shows up here), the 5 diffs, game
+data as C objects (so the data symbols come from the link, not from the retail words), and replacing the rest of
+the glue (66 k code words) by compiled functions, starting with the ones next to library code.

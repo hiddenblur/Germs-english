@@ -36,10 +36,23 @@ class BuildExe(unittest.TestCase):
     def test_full_psylink_link_equals_retail(self):
         import subprocess
         out = ROOT / "build" / "link"
-        r = subprocess.run([sys.executable, "-I", str(ROOT / "tools" / "fulllink.py"), "--out", str(out)],
+        r = subprocess.run([sys.executable, "-I", str(ROOT / "tools" / "fulllink.py"), "--out", str(out), "--no-c"],
                            capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("0 words differ", r.stdout)
+
+    @unittest.skipUnless((ROOT / "tools" / "vendor" / "psyq44" / "LIB").exists() and (ROOT / "decomp" / "objects.txt").exists(),
+                         "needs the unpacked Lib44 (tools/vendor/psyq44)")
+    def test_c_functions_in_the_link(self):
+        """With our compiled C linked in, only the functions that do not match yet differ from retail."""
+        import re
+        import subprocess
+        r = subprocess.run([sys.executable, "-I", str(ROOT / "tools" / "fulllink.py"), "--out", str(ROOT / "build" / "link-c")],
+                           capture_output=True, text=True)
+        self.assertIn("0 error(s)", r.stdout, r.stdout + r.stderr)
+        differing = set(re.findall(r"^  (\w+): \d+ words differ", r.stdout, re.M))
+        self.assertEqual(differing, NOT_C_YET, r.stdout)
+        self.assertIn("86 C functions", r.stdout)
 
     def test_lnk_writer_roundtrip(self):
         import lnk
