@@ -127,6 +127,49 @@ def dump_script_file(data, rel):
     return entries, covered
 
 
+def jis1_kanji(raw):
+    """True if raw is 2+ JIS level 1 kanji and nothing else (job titles, place names)."""
+    if len(raw) < 4 or len(raw) % 2:
+        return False
+    for k in range(0, len(raw), 2):
+        a, b = raw[k], raw[k + 1]
+        if not (0x88 <= a <= 0x98 and 0x40 <= b <= 0xFC) or (a == 0x98 and b > 0x72):
+            return False
+    try:
+        raw.decode("cp932")
+    except UnicodeDecodeError:
+        return False
+    return True
+
+
+# slot sizes of the records that hold kanji-only strings: profile titles in SCE.S are 0x20
+# bytes apart, the RES.R name tables 0x28
+KANJI_SLOT = {"SCE.S": 0x20, "RES.R": 0x28}
+KANJI_FROM = {"SCE.S": 0, "RES.R": 0xDF000}      # RES.R before the name tables is binary data
+
+
+def kanji_entries(data, rel, skip=()):
+    """Strings with no kana at all (番犬, 街全体); loose_entries() skips them."""
+    out, i, n = [], 0, len(data)
+    while i < n:
+        if data[i] == 0 or (i and data[i - 1] != 0):
+            i += 1
+            continue
+        j = i
+        while j < n and data[j] != 0:
+            j += 1
+        raw = data[i:j]
+        if i not in skip and i >= KANJI_FROM[rel] and i % 4 == 0 and jis1_kanji(raw):
+            k = j
+            while k < n and data[k] == 0:
+                k += 1
+            out.append({"id": f"{rel}:{i:X}", "file": rel, "offset": i, "length": len(raw),
+                        "capacity": min(k - i, KANJI_SLOT[rel]), "cmd": None,
+                        "ja": raw.decode("cp932"), "en": ""})
+        i = j
+    return out
+
+
 def loose_entries(data, rel, skip=()):
     out = []
     for off, raw in scan(data, 1):
@@ -158,6 +201,8 @@ def main():
             entries, covered = dump_script_file(data, rel)
             fixed = weapon_names(data) if rel == "RES.R" else {}
             loose = [e for e in loose_entries(data, rel, covered) if e["offset"] not in fixed]
+            have = covered | {e["offset"] for e in loose} | set(fixed)
+            loose += kanji_entries(data, rel, have)
             for off, cap in fixed.items():
                 raw = data[off:off + cap].split(bytes(1))[0]
                 loose.append({"id": f"{rel}:{off:X}", "file": rel, "offset": off,

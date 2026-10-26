@@ -1063,7 +1063,7 @@
     "y": 8,
     "w": 89,
     "h": 17,
-    "text": "How to get there",
+    "text": "How do I get to...",
     "ink": 11,
     "bg": 14
    },
@@ -2238,6 +2238,988 @@
     "h": 19,
     "text": " Take weapon",
     "ink": 11,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/SH1.RM@B9004": {
+  "note": "Fast food menu board",
+  "regions": [
+   {
+    "x": 30,
+    "y": 40,
+    "w": 130,
+    "h": 16,
+    "text": "Hamburger",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 64,
+    "w": 130,
+    "h": 16,
+    "text": "Triple Cheeseburger",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 88,
+    "w": 130,
+    "h": 16,
+    "text": "Teriyaki Chicken Stick",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 112,
+    "w": 130,
+    "h": 16,
+    "text": "Cheese Hot Dog",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/SH1.RM@BC804": {
+  "note": "Fast food menu board",
+  "regions": [
+   {
+    "x": 30,
+    "y": 41,
+    "w": 130,
+    "h": 16,
+    "text": "Iced/Hot Coffee",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 64,
+    "w": 130,
+    "h": 16,
+    "text": "Diet Cola",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 88,
+    "w": 130,
+    "h": 16,
+    "text": "Milk",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 112,
+    "w": 130,
+    "h": 16,
+    "text": "Banana Shake",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/SH1.RM@C0004": {
+  "note": "Fast food menu board",
+  "regions": [
+   {
+    "x": 30,
+    "y": 40,
+    "w": 130,
+    "h": 16,
+    "text": "Ability Burger",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 64,
+    "w": 130,
+    "h": 16,
+    "text": "Attack Power Burger",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 88,
+    "w": 130,
+    "h": 16,
+    "text": "Awake Chicken",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 112,
+    "w": 130,
+    "h": 16,
+    "text": "Super Evo Dog",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/SH1.RM@C3804": {
+  "note": "Fast food menu board",
+  "regions": [
+   {
+    "x": 30,
+    "y": 40,
+    "w": 130,
+    "h": 16,
+    "text": "Recharge Coffee",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 64,
+    "w": 130,
+    "h": 16,
+    "text": "High-Protein Cola",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 88,
+    "w": 130,
+    "h": 16,
+    "text": "Fiber Milk",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 30,
+    "y": 112,
+    "w": 130,
+    "h": 16,
+    "text": "Dimension Shake",
+    "ink": 11,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/SH1.RM@C7004": {
+  "note": "Deli menu card 1",
+  "regions": [
+   {
+    "x": 14,
+    "y": 40,
+    "w": 148,
+    "h": 16,
+    "text": "Pastrami Sandwich",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 13,
+    "y": 61,
+    "w": 56,
+    "h": 16,
+    "text": "Our pick!",
+    "ink": 9,
+    "bg": 14
+   },
+   {
+    "x": 69,
+    "y": 64,
+    "w": 86,
+    "h": 16,
+    "text": "BLT Sandwich",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 15,
+    "y": 89,
+    "w": 152,
+    "h": 16,
+    "text": "Bagel (Salmon & Cheese)",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 15,
+    "y": 107,
+    "w": 100,
+    "h": 14,
+    "text": "Long Island Style",
+    "ink": 9,
+    "bg": 14
+   },
+   {
+    "x": 33,
+    "y": 121,
+    "w": 124,
+    "h": 14,
+    "text": "Corned Beef Sandwich",
+    "ink": 10,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/SH1.RM@CA804": {
+  "note": "Deli menu card 2",
+  "regions": [
+   {
+    "x": 60,
+    "y": 40,
+    "w": 100,
+    "h": 16,
+    "text": "Caesar Salad",
+    "ink": 10,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 60,
+    "y": 64,
+    "w": 100,
+    "h": 16,
+    "text": "Clam Chowder",
+    "ink": 10,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 60,
+    "y": 88,
+    "w": 100,
+    "h": 16,
+    "text": "Fried Chicken",
+    "ink": 10,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 60,
+    "y": 111,
+    "w": 100,
+    "h": 16,
+    "text": "Baked Potato",
+    "ink": 10,
+    "bg": 14,
+    "align": "right"
+   }
+  ]
+ },
+ "M/A/SH1.RM@D6004": {
+  "note": "Course menu",
+  "regions": [
+   {
+    "x": 68,
+    "y": 41,
+    "w": 86,
+    "h": 18,
+    "text": "1 Hour Course",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 68,
+    "y": 70,
+    "w": 86,
+    "h": 18,
+    "text": "3 Hour Course",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 68,
+    "y": 101,
+    "w": 86,
+    "h": 18,
+    "text": "6 Hour Course",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   }
+  ]
+ },
+ "M/A/FMR.RM@8C004": {
+  "note": "Diner breakfast menu",
+  "regions": [
+   {
+    "x": 8,
+    "y": 38,
+    "w": 142,
+    "h": 14,
+    "text": "Set A (Toast, Coffee)",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 44,
+    "y": 60,
+    "w": 124,
+    "h": 14,
+    "text": "Set B (Set A + Ham)",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 4,
+    "y": 84,
+    "w": 65,
+    "h": 14,
+    "text": "Salmon Meal",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 40,
+    "y": 107,
+    "w": 81,
+    "h": 14,
+    "text": "Congee Set",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 60,
+    "y": 124,
+    "w": 122,
+    "h": 18,
+    "text": "Have a great day!!",
+    "ink": 10,
+    "bg": 14,
+    "align": "center"
+   }
+  ]
+ },
+ "M/A/FMR.RM@8F804": {
+  "note": "Diner lunch menu",
+  "regions": [
+   {
+    "x": 6,
+    "y": 3,
+    "w": 178,
+    "h": 20,
+    "text": "Special Lunch Menu",
+    "ink": 11,
+    "bg": 9
+   },
+   {
+    "x": 60,
+    "y": 42,
+    "w": 97,
+    "h": 14,
+    "text": "Pancake Set",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 30,
+    "y": 60,
+    "w": 98,
+    "h": 14,
+    "text": "Today's Pasta Set",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 50,
+    "y": 82,
+    "w": 104,
+    "h": 14,
+    "text": "Ginger Beef Meal",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 50,
+    "y": 113,
+    "w": 87,
+    "h": 13,
+    "text": "Steak Lunch",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 15,
+    "y": 101,
+    "w": 83,
+    "h": 12,
+    "text": "Chef's Pick",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 80,
+    "y": 126,
+    "w": 88,
+    "h": 14,
+    "text": "With wine",
+    "ink": 10,
+    "bg": 14,
+    "align": "center"
+   }
+  ]
+ },
+ "M/A/FMR.RM@93004": {
+  "note": "Diner dinner menu",
+  "regions": [
+   {
+    "x": 6,
+    "y": 3,
+    "w": 178,
+    "h": 20,
+    "text": "Dinner Time Menu",
+    "ink": 11,
+    "bg": 10
+   },
+   {
+    "x": 66,
+    "y": 30,
+    "w": 116,
+    "h": 14,
+    "text": "Good work today!",
+    "ink": 10,
+    "bg": 14,
+    "align": "center"
+   },
+   {
+    "x": 14,
+    "y": 47,
+    "w": 141,
+    "h": 14,
+    "text": "Seaweed Salad w/ Bread",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 18,
+    "y": 66,
+    "w": 98,
+    "h": 14,
+    "text": "Mackerel Meal",
+    "ink": 11,
+    "bg": 14
+   },
+   {
+    "x": 36,
+    "y": 92,
+    "w": 119,
+    "h": 14,
+    "text": "Beef Stew Dinner",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 24,
+    "y": 113,
+    "w": 118,
+    "h": 14,
+    "text": "BBQ Buffet Set",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 53,
+    "y": 125,
+    "w": 89,
+    "h": 14,
+    "text": "2-hour buffet!",
+    "ink": 10,
+    "bg": 14,
+    "align": "center"
+   }
+  ]
+ },
+ "M/A/FMR.RM@96804": {
+  "note": "Diner special menu",
+  "regions": [
+   {
+    "x": 6,
+    "y": 3,
+    "w": 178,
+    "h": 20,
+    "text": "Special Menu",
+    "ink": 11,
+    "bg": 10
+   },
+   {
+    "x": 42,
+    "y": 28,
+    "w": 142,
+    "h": 14,
+    "text": "Live your best day!!",
+    "ink": 10,
+    "bg": 14,
+    "align": "center"
+   },
+   {
+    "x": 26,
+    "y": 47,
+    "w": 62,
+    "h": 13,
+    "text": "Take care!",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 92,
+    "y": 51,
+    "w": 78,
+    "h": 14,
+    "text": "Protein Balls",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 36,
+    "y": 68,
+    "w": 86,
+    "h": 14,
+    "text": "Powdered Curry",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 50,
+    "y": 88,
+    "w": 108,
+    "h": 14,
+    "text": "Leek Miso Katsudon",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   },
+   {
+    "x": 20,
+    "y": 108,
+    "w": 58,
+    "h": 12,
+    "text": "Our pick!",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 40,
+    "y": 120,
+    "w": 106,
+    "h": 14,
+    "text": "Wine-steamed Meat",
+    "ink": 11,
+    "bg": 14,
+    "align": "right"
+   }
+  ]
+ },
+ "M/A/RTN.RM@55004": {
+  "note": "Restaurant menu page",
+  "regions": [
+   {
+    "x": 8,
+    "y": 34,
+    "w": 83,
+    "h": 12,
+    "text": "Spinach",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 46,
+    "w": 83,
+    "h": 12,
+    "text": "Cream",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 58,
+    "w": 65,
+    "h": 12,
+    "text": "Pasta",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 89,
+    "w": 83,
+    "h": 12,
+    "text": "Napoli",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 101,
+    "w": 83,
+    "h": 12,
+    "text": "Fisherman",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 113,
+    "w": 65,
+    "h": 12,
+    "text": "Gratin",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 41,
+    "w": 82,
+    "h": 12,
+    "text": "Roman Style",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 53,
+    "w": 66,
+    "h": 12,
+    "text": "Chicken Stew",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 90,
+    "w": 82,
+    "h": 12,
+    "text": "Chef's",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 102,
+    "w": 82,
+    "h": 12,
+    "text": "Choice",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 115,
+    "w": 66,
+    "h": 12,
+    "text": "Lunch",
+    "ink": 10,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/RTN.RM@58804": {
+  "note": "Restaurant menu page",
+  "regions": [
+   {
+    "x": 8,
+    "y": 34,
+    "w": 83,
+    "h": 12,
+    "text": "Special",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 46,
+    "w": 83,
+    "h": 12,
+    "text": "Dessert &",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 58,
+    "w": 65,
+    "h": 12,
+    "text": "Drink",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 101,
+    "w": 83,
+    "h": 12,
+    "text": "Milanese",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 113,
+    "w": 65,
+    "h": 12,
+    "text": "Sandwich",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 33,
+    "w": 82,
+    "h": 12,
+    "text": "Blue Cheese",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 45,
+    "w": 82,
+    "h": 12,
+    "text": "Salad &",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 57,
+    "w": 66,
+    "h": 12,
+    "text": "Drink",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 90,
+    "w": 82,
+    "h": 12,
+    "text": "Roman-style",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 102,
+    "w": 82,
+    "h": 12,
+    "text": "Afternoon",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 114,
+    "w": 66,
+    "h": 12,
+    "text": "Tea Set",
+    "ink": 10,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/RTN.RM@5C004": {
+  "note": "Restaurant menu page",
+  "regions": [
+   {
+    "x": 8,
+    "y": 35,
+    "w": 83,
+    "h": 12,
+    "text": "Pasta, Salad",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 47,
+    "w": 83,
+    "h": 12,
+    "text": "Fish of",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 59,
+    "w": 65,
+    "h": 12,
+    "text": "the Day",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 101,
+    "w": 83,
+    "h": 12,
+    "text": "Pasta, Salad",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 113,
+    "w": 65,
+    "h": 12,
+    "text": "Fish, Meat",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 34,
+    "w": 82,
+    "h": 12,
+    "text": "Pasta, Salad",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 46,
+    "w": 82,
+    "h": 12,
+    "text": "Fish & Meat",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 58,
+    "w": 66,
+    "h": 12,
+    "text": "Dessert",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 101,
+    "w": 82,
+    "h": 12,
+    "text": "Chef's",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 113,
+    "w": 66,
+    "h": 12,
+    "text": "Choice",
+    "ink": 10,
+    "bg": 14
+   }
+  ]
+ },
+ "M/A/RTN.RM@5F804": {
+  "note": "Restaurant menu page",
+  "regions": [
+   {
+    "x": 8,
+    "y": 35,
+    "w": 83,
+    "h": 12,
+    "text": "Pasta, Salad",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 47,
+    "w": 83,
+    "h": 12,
+    "text": "Newly Changed",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 59,
+    "w": 65,
+    "h": 12,
+    "text": "Fish",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 100,
+    "w": 83,
+    "h": 12,
+    "text": "Gene Mushroom",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 8,
+    "y": 112,
+    "w": 65,
+    "h": 12,
+    "text": "& Meat",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 34,
+    "w": 82,
+    "h": 12,
+    "text": "Rabbit & Cactus",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 46,
+    "w": 82,
+    "h": 12,
+    "text": "Stew with",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 58,
+    "w": 66,
+    "h": 12,
+    "text": "Pasta",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 101,
+    "w": 82,
+    "h": 12,
+    "text": "\"Other Side\"",
+    "ink": 10,
+    "bg": 14
+   },
+   {
+    "x": 103,
+    "y": 113,
+    "w": 66,
+    "h": 12,
+    "text": "Our pick",
+    "ink": 10,
     "bg": 14
    }
   ]

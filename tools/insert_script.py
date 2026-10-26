@@ -174,7 +174,9 @@ def apply(root, tr):
     tr = {sid: v for sid, v in tr.items() if "@" not in sid}
     problems = [(sid, "unknown id") for sid in sorted(set(tr) - set(dumps))]
     bufs = {name: bytearray((files / name).read_bytes()) for name in ("SCE.S", "RES.R", "SLPS_021.07")}
-    for name in ("RES.R", "SCE.S"):
+    for name in sorted({images.parse_id(sid)[0] for sid in image_tr}):
+        if name not in bufs:                # menus in the room files (M/A/*.RM)
+            bufs[name] = bytearray((files / name).read_bytes())
         images.apply(bufs[name], image_tr, problems, name)
 
     # 1. strings outside commands go in place, before SCE.S is parsed
@@ -223,6 +225,7 @@ def main():
         raise SystemExit(f"{len(problems)} problem(s); nothing written")
     out_dir.mkdir(parents=True, exist_ok=True)
     for name, buf in bufs.items():
+        (out_dir / name).parent.mkdir(parents=True, exist_ok=True)
         (out_dir / name).write_bytes(buf)
     print(f"{len(tr)} strings inserted; all files keep their size")
 

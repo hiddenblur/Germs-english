@@ -5,8 +5,11 @@
  "SCE.S:3520E0": "Tsutomu Shinbori",
  "SCE.S:352100": "Indenco staff",
  "SCE.S:352120": "Studied cybernetics; works PR at Indenco. With in-house mail, he rarely needs to visit other floors.",
+ "SCE.S:3521CC": "Higher-dimensional being",
  "SCE.S:3521EC": "(Too much residual thought to grasp clearly.) Faintly, an image of the constellation Orion.",
+ "SCE.S:352298": "Higher-dimensional being",
  "SCE.S:3522B8": "(Too much residual thought to grasp clearly.) Faintly, an image of swirling light.",
+ "SCE.S:352364": "Higher-dimensional being",
  "SCE.S:352384": "(Too much residual thought to grasp clearly.) Faintly, a rainbow tunnel stretching out.",
  "SCE.S:364858": "Go outside",
  "SCE.S:36492C": "Take the elevator",
@@ -29,7 +32,7 @@
  "SCE.S:365EC0": "How may I help you? For Indenco Net, please see Public Relations on the 10th floor.",
  "SCE.S:365F78": "Indenco Net Service reports on the town's situation using reliable information.",
  "SCE.S:366034": "You use Indenco Net Service? Thank you very much. We strive to provide community-based information.",
- "SCE.S:366224": "Residual thoughts remain",
+ "SCE.S:366224": "Examine",
  "SCE.S:368058": "Go outside",
  "SCE.S:36812C": "Take the elevator",
  "SCE.S:368260": "Take the elevator",
@@ -57,7 +60,7 @@
  "SCE.S:36A118": "(You have seen the many changed ones in the {7}mine{2}. That is the result of the unnatural, hasty evolution \"they\" brought to this town. Such changes distort the world. They must be stopped. You Earthlings must stop the change with your own hands.)",
  "SCE.S:36A290": "(The changes of form happening in this town are contagious. The source of the contagion is \"them.\" \"They\" will spread across the whole Earth and consume everything. Change is their food.)",
  "SCE.S:36A38C": "(\"They,\" who bring the change, are neither intelligent beings with personalities nor material beings. Your culture has no concept that describes \"them\" accurately. If we had to say, the concept of \"devil\" may be relatively close.)",
- "SCE.S:36A4BC": "Residual thoughts remain",
+ "SCE.S:36A4BC": "Examine",
  "SCE.S:36C058": "Go outside",
  "SCE.S:36C12C": "Take the elevator",
  "SCE.S:36C260": "Take the elevator",
@@ -82,5 +85,5 @@
  "SCE.S:36D908": "(\"They\" are trying to leave for another dimension through the \"path of power\" in the mine. The more who leave, the thicker and sturdier the path becomes.)",
  "SCE.S:36DA04": "(When the \"path of power\" is complete, the power needed for change will be brought from another dimension. Once enough power flows in, the conscious beings on Earth will change in an instant. The change \"they\" bring creates distortion within each individual consciousness.)",
  "SCE.S:36DB50": "(\"They\" call the path that brings the \"power\" of change the Catapult of Consciousness. It is on the second underground level of the mine. Go there.)",
- "SCE.S:36DE58": "Residual thoughts remain"
+ "SCE.S:36DE58": "Examine"
 }

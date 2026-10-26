@@ -6,8 +6,10 @@
  "SCE.S:3CD100": "Restaurant staff",
  "SCE.S:3CD120": "Born in Milan. Came to work here via manager Luigi. A first-class cook; pizza is his forte.",
  "SCE.S:3CD1AC": "Kumiko Satou",
+ "SCE.S:3CD1CC": "College student",
  "SCE.S:3CD1EC": "Grad student at the west university, in Italian art history. Eats lunch here to practice Italian.",
  "SCE.S:3CD278": "Rumiko Satou",
+ "SCE.S:3CD298": "Mining co. worker",
  "SCE.S:3CD2B8": "Joined the mining firm out of high school. Even in decline, working here helps marriage prospects.",
  "SCE.S:3D6858": "Go outside",
  "SCE.S:3D68CC": "Open the door",
@@ -28,7 +30,7 @@
  "SCE.S:3D7594": "Try our pizza! It's the best!",
  "SCE.S:3D7618": "I'm going to Italy soon.",
  "SCE.S:3D76A4": "{6}The lasagna here is delicious. Why don't you join the filling?",
- "SCE.S:3D7994": "Residual thoughts remain",
+ "SCE.S:3D7994": "Examine",
  "SCE.S:3D9858": "Go outside",
  "SCE.S:3D98CC": "Open the door",
  "SCE.S:3D99E0": "Open the door",
@@ -46,7 +48,7 @@
  "SCE.S:3DA448": "Nice place, isn't it?",
  "SCE.S:3DA4C4": "Keep eating, keep eating!",
  "SCE.S:3DA540": "I rushed back from Italy, but the town was in terrible shape.",
- "SCE.S:3DA7DC": "Residual thoughts remain",
+ "SCE.S:3DA7DC": "Examine",
  "SCE.S:3DC858": "Go outside",
  "SCE.S:3DC8CC": "Open the door",
  "SCE.S:3DC9E0": "Open the door",
@@ -62,5 +64,5 @@
  "SCE.S:3DD294": "{6}The sense of deliciousness is still strong in you, isn't it?",
  "SCE.S:3DD324": "{6}I'm going back to Italy soon. With \"humans,\" of course.",
  "SCE.S:3DD3C0": "{6}My sense of taste has become very sharp. What was I eating before?",
- "SCE.S:3DD644": "Residual thoughts remain"
+ "SCE.S:3DD644": "Examine"
 }

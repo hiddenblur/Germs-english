@@ -1,6 +1,8 @@
 {
  "SCE.S:56A014": "Masako Ikeda",
+ "SCE.S:56A034": "Map shop clerk",
  "SCE.S:56A0E0": "Jusaburou Ikeda",
+ "SCE.S:56A100": "Map shop owner",
  "SCE.S:56A120": "Opened this shop at 24; wed Masako at 33. Their two kids and grandkids live in the next town.",
  "SCE.S:57E858": "When you get outside, press the {8}Select button{2}. A map will appear, and I've marked your destination in red. ...Oh, and my husband is in the back. Why not ask him all sorts of things?",
  "SCE.S:57E960": "Your newspaper office? What are you talking about? It's right across from us!",
@@ -51,7 +53,7 @@
  "SCE.S:581C8C": "Open the door",
  "SCE.S:581DA0": "Go outside",
  "SCE.S:581E9C": "Ask me anything about the town.",
- "SCE.S:58200C": "Residual thoughts remain",
+ "SCE.S:58200C": "Examine",
  "SCE.S:584058": "When you get outside, press the {8}Select button{2}. A map will appear, and I've marked your destination in red. ...Oh, and my husband is in the back. Why not ask him all sorts of things?",
  "SCE.S:584160": "Your newspaper office? What are you talking about? It's right across from us!",
  "SCE.S:58421C": "Take the {7}subway{2} in front of the {7}hotel{2}, from the No. 4 platform toward Cathedral. It's really quick. You'll come out at the corner of the church square.",
@@ -101,7 +103,7 @@
  "SCE.S:58748C": "Open the door",
  "SCE.S:5875A0": "Go outside",
  "SCE.S:58769C": "Ask me anything about the town.",
- "SCE.S:58780C": "Residual thoughts remain",
+ "SCE.S:58780C": "Examine",
  "SCE.S:589858": "When you get outside, press the {8}Select button{2}. A map will appear, and I've marked your destination in red. ...Oh, and my husband is in the back. Why not ask him all sorts of things?",
  "SCE.S:589960": "Your newspaper office? What are you talking about? It's right across from us!",
  "SCE.S:589A1C": "Take the {7}subway{2} in front of the {7}hotel{2}, from the No. 4 platform toward Cathedral. It's really quick. You'll come out at the corner of the church square.",
@@ -151,5 +153,5 @@
  "SCE.S:58CC8C": "Open the door",
  "SCE.S:58CDA0": "Go outside",
  "SCE.S:58CE9C": "Ask me anything about the town.",
- "SCE.S:58D00C": "Residual thoughts remain"
+ "SCE.S:58D00C": "Examine"
 }

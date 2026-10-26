@@ -3,7 +3,9 @@
  "SCE.S:3FC8E0": "Joey",
  "SCE.S:3FC900": "Deli clerk",
  "SCE.S:3FC9AC": "Haruyuki Hosono",
+ "SCE.S:3FC9CC": "Unemployed",
  "SCE.S:3FC9EC": "Lived on rent from inherited flats, then lost it all investing. Now broke. Enjoys classical ballet.",
+ "SCE.S:3FCA98": "Weapon shop clerk",
  "SCE.S:3FCB44": "Brenda",
  "SCE.S:3FCB64": "Chiropractor",
  "SCE.S:3FCB84": "Studied physiology in Canada; now into Eastern medicine and bodywork.",
@@ -36,7 +38,7 @@
  "SCE.S:409D3C": "...Delicious. ...Really delicious. This place is the best!",
  "SCE.S:409DEC": "The doctors at our center are all excellent.",
  "SCE.S:409E84": "Normally chiropractors don't treat wounds, but we're special.",
- "SCE.S:40A204": "Residual thoughts remain",
+ "SCE.S:40A204": "Examine",
  "SCE.S:40C058": "Go outside",
  "SCE.S:40C0E0": "Welcome. Ready to order?",
  "SCE.S:40C140": "Eat in {3}○{1}  Take out {4}×",
@@ -55,7 +57,7 @@
  "SCE.S:40CA9C": "Now that the town is at peace, my appetite keeps growing! The pastrami here is the best!",
  "SCE.S:40CB5C": "The doctors at our center are all excellent.",
  "SCE.S:40CBF4": "Normally chiropractors don't treat wounds, but we're special.",
- "SCE.S:40CF74": "Residual thoughts remain",
+ "SCE.S:40CF74": "Examine",
  "SCE.S:40E858": "Go outside",
  "SCE.S:40E8E0": "{6}Everything's free!",
  "SCE.S:40E930": "Eat in {3}○{1}  Take out {4}×",
@@ -71,5 +73,5 @@
  "SCE.S:40F090": "{6}When you're hurt again, come here. Don't go to a {7}hospital{6} or anything like that!",
  "SCE.S:40F144": "{6}...Eating, you know, is using the power fixed in organic matter in your own way.",
  "SCE.S:40F1FC": "{6}You came for treatment before, didn't you. I became like this too, and now I can give treatment.",
- "SCE.S:40F4CC": "Residual thoughts remain"
+ "SCE.S:40F4CC": "Examine"
 }

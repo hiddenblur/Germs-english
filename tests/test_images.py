@@ -99,10 +99,9 @@ class ImageTests(unittest.TestCase):
     def test_screen_regions_cover_whole_glyphs(self):
         """A region that cuts through an original glyph leaves stray pixels next to it."""
         tr = insert_script.load_translations([ROOT / "translations" / "screens.json"])
-        files = {"RES.R": self.res, "SCE.S": (ROOT / "extracted" / "files" / "SCE.S").read_bytes()}
         for sid, (spec, _) in tr.items():
             name, off = images.parse_id(sid)
-            t = tim.parse(files[name], off)
+            t = tim.parse((ROOT / "extracted" / "files" / name).read_bytes(), off)
             regions = spec["regions"]
             for x0, y0, x1, y1 in glyph_boxes(t, {r["ink"] for r in regions}):
                 if x1 - x0 > 60 or y1 - y0 > 20:
