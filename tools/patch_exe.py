@@ -423,6 +423,8 @@ STICK_WRAPPER = f"""
     nop
     addu  $t6, $t6, $t5             # stick right = Right button: yaw up
     sh    $t6, 0x6E($t1)
+    addiu $t6, $zero, 1
+    sh    $t6, 0x3C($t1)            # "moving this frame": the view only updates with it set
 k_ry:
 {stick(5, "k_ly")}
     mult  $t4, $t3
@@ -442,6 +444,8 @@ k_pmax:
     addiu $t6, $zero, {PITCH_MIN}
 k_pmin:
     sh    $t6, 0x6C($t1)
+    addiu $t6, $zero, 1
+    sh    $t6, 0x3C($t1)
 k_ly:
 {stick(7, "k_lx")}
     subu  $t4, $zero, $t4           # stick up = forward = positive

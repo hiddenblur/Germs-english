@@ -66,7 +66,7 @@ that runs it and then reads the sticks from the BIOS pad buffer `0x80007570` (+4
 
 | Stick | Field | Like the button | Status |
 |---|---|---|---|
-| right X | yaw `+0x6E`, `stick * dt >> 5` | Left/Right | confirmed live (compass E to S) |
+| right X | yaw `+0x6E`, `stick * dt >> 5` | Left/Right | confirmed live (compass E to S); needs `+0x3C` set too |
 | left Y | forward `+0x50`, `-stick * dt * 11 >> 7` (full = run speed) | Triangle/Cross | confirmed live (view moved) |
 | right Y | pitch `+0x6C`, `stick * dt >> 6`, clamped -25..65 | Up/Down | unit test only |
 | left X | strafe `+0x4E`, `stick * dt * 6 >> 7` | L1/R1 | unit test only |
@@ -90,3 +90,8 @@ noise), so scripted stick tests need that pad unplugged or idle.
 
 Unit test: `tests/test_sticks.py` (unicorn; the retail movement function is stubbed).
 Not done: mouse input (needs the recomp), a smoother turn curve, sensitivity options.
+
+Fix 2026-10-25: the view only updates while `[+0x3C]` ("moving this frame") is 1, and every
+retail direction button sets it. The first stick version set it only for forward/strafe, so the
+right stick turned and looked only while the left stick was also deflected. Yaw and pitch now set it
+too (user report; unit tests check it).

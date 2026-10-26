@@ -73,12 +73,14 @@ class Stick(unittest.TestCase):
         self.assertEqual(self.run_wrapper(rx=0xFF)["yaw"], 100 + ((127 * 3) >> 5))
         self.assertEqual(self.run_wrapper(rx=0x00)["yaw"], 100 + ((-128 * 3) >> 5))
         self.assertEqual(self.run_wrapper(rx=0xFF, dt=1)["yaw"], 100 + (127 >> 5))
+        self.assertEqual(self.run_wrapper(rx=0xFF)["moving"], 1)    # the view only updates with this set
 
     def test_pitch_right_stick_y_and_limits(self):
         self.assertEqual(self.run_wrapper(ry=0x00)["pitch"], (128 * 3) >> 6)          # up: look up
         self.assertEqual(self.run_wrapper(ry=0xFF)["pitch"], -((127 * 3) >> 6))         # down
         self.assertEqual(self.run_wrapper(ry=0x00, pitch=64)["pitch"], 65)            # clamped at 65
         self.assertEqual(self.run_wrapper(ry=0xFF, pitch=-24)["pitch"], -25)          # and -25
+        self.assertEqual(self.run_wrapper(ry=0x00)["moving"], 1)
 
     def test_forward_and_back_left_stick_y(self):
         r = self.run_wrapper(ly=0x00)
