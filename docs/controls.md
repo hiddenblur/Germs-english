@@ -95,3 +95,10 @@ Fix 2026-10-25: the view only updates while `[+0x3C]` ("moving this frame") is 1
 retail direction button sets it. The first stick version set it only for forward/strafe, so the
 right stick turned and looked only while the left stick was also deflected. Yaw and pitch now set it
 too (user report; unit tests check it).
+
+Call sites (found booting the patched disc: the office did not use the city one): `0x80199548` is
+called from `0x801A8880` (city, a1 = 2), `0x801942E4` (office, a1 = 0, pad word in a2) and `0x8017DF7C`
+(a1 = 1; not seen running yet). All three go through the stick wrapper, which finds the player struct
+through `[a0 + 0x5C]` instead of a fixed address and saves `s0`/`ra` around the call.
+Boot check, 2026-10-25: a disc built with `insert_script` + `patch_exe` + `build_disc` boots, shows the
+English intro, and hits the wrapper in the office (execute breakpoint at `0x801B1F90`, caller `0x801942EC`).

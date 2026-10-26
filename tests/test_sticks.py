@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import patch_exe
 
 LOAD, SENTINEL = 0x80170000, 0x80000100
-PAD, PLAYER, DT = 0x80007570, 0x801E0620, 0x801E6DB4
+PAD, PLAYER, DT, CTRL = 0x80007570, 0x801E0620, 0x801E6DB4, 0x801E0710
 YAW, PITCH, STRAFE, FORWARD, MOVING = PLAYER + 0x6E, PLAYER + 0x6C, PLAYER + 0x4E, PLAYER + 0x50, PLAYER + 0x3C
 
 
@@ -37,6 +37,7 @@ class Stick(unittest.TestCase):
         uc.mem_write(P(LOAD), self.exe[0x800:])
         uc.mem_write(P(PAD), bytes([0, pad_id, 0xFF, 0xFF, rx, ry, lx, ly]))
         uc.mem_write(P(DT), struct.pack("<I", dt))
+        uc.mem_write(P(CTRL + 0x5C), struct.pack("<I", PLAYER))
         uc.mem_write(P(PLAYER + 0x46), struct.pack("<H", mode))
         uc.mem_write(P(YAW), struct.pack("<H", yaw))
         uc.mem_write(P(PITCH), struct.pack("<h", pitch))
@@ -51,8 +52,11 @@ class Stick(unittest.TestCase):
         uc.hook_add(UC_HOOK_CODE, hook)
         uc.reg_write(R.UC_MIPS_REG_SP, 0x801FF000)
         uc.reg_write(R.UC_MIPS_REG_RA, SENTINEL)
+        uc.reg_write(R.UC_MIPS_REG_A0, CTRL)
+        uc.reg_write(R.UC_MIPS_REG_S0, 0x1234)
         uc.emu_start(patch_exe.STICK_BLOCK, SENTINEL)
         self.sp = uc.reg_read(R.UC_MIPS_REG_SP)
+        self.s0 = uc.reg_read(R.UC_MIPS_REG_S0)
         h = lambda a: struct.unpack("<h", uc.mem_read(P(a), 2))[0]
         return dict(yaw=h(YAW), pitch=h(PITCH), strafe=h(STRAFE), fwd=h(FORWARD), moving=h(MOVING))
 
@@ -60,6 +64,7 @@ class Stick(unittest.TestCase):
         self.run_wrapper()
         self.assertEqual(self.moves, 1)
         self.assertEqual(self.sp, 0x801FF000)
+        self.assertEqual(self.s0, 0x1234)             # callee-saved register restored
 
     def test_idle_and_digital_leave_the_player_alone(self):
         idle = dict(yaw=100, pitch=0, strafe=0, fwd=0, moving=0)
@@ -94,9 +99,9 @@ class Stick(unittest.TestCase):
         self.assertEqual(self.run_wrapper(lx=0x00)["strafe"], ((-128 * 3) * 6) >> 7)
 
     def test_call_site_goes_through_the_wrapper(self):
-        off = patch_exe.MOVE_CALL - LOAD + patch_exe.HEADER
-        word = struct.unpack_from("<I", self.exe, off)[0]
-        self.assertEqual(word, 0x0C000000 | (patch_exe.STICK_BLOCK >> 2 & 0x3FFFFFF))
+        for call in patch_exe.MOVE_CALLS:
+            word = struct.unpack_from("<I", self.exe, call - LOAD + patch_exe.HEADER)[0]
+            self.assertEqual(word, 0x0C000000 | (patch_exe.STICK_BLOCK >> 2 & 0x3FFFFFF), hex(call))
 
 
 if __name__ == "__main__":

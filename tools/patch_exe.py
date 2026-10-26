@@ -366,7 +366,7 @@ wd_upload:
 # Analog sticks (prototype). The game only reads the digital buttons, but an analog pad in analog
 # mode (ID 0x73) also leaves the sticks in the BIOS pad buffer: 0x80007570 +4 RX, +5 RY, +6 LX,
 # +7 LY (0x80 = centre). The movement function 0x80199548 (docs/controls.md) is called from
-# 0x801A8880; that call goes through this wrapper, which runs it and then adds the sticks on top,
+# 0x801A8880, 0x801942E4 and 0x8017DF7C; those calls go through this wrapper, which runs it and then adds the sticks on top,
 # standard dual-stick layout:
 #   right stick X -> yaw (+0x6E)          like the Left/Right buttons
 #   right stick Y -> pitch (+0x6C)        like Up/Down, kept inside the game's range -25..65
@@ -375,7 +375,7 @@ wd_upload:
 # Digital pads (ID 0x41) and the look-offset mode (+0x46 != 0) are left alone. The code replaces
 # GsSetFlatLight (0x801B1F90-0x801B2500), which nothing in the game calls.
 MOVE = 0x80199548
-MOVE_CALL = 0x801A8880
+MOVE_CALLS = [0x801A8880, 0x801942E4, 0x8017DF7C]   # city (a1 = 2), office (0), a1 = 1
 STICK_BLOCK, STICK_BLOCK_END = 0x801B1F90, 0x801B2500
 STICK_DEADZONE = 24             # raw stick units around the centre that are ignored
 STICK_YAW_SHIFT = 5             # yaw += stick * dt >> 5 (the pad adds dt per frame)
@@ -398,17 +398,21 @@ def stick(axis, label):
 
 
 STICK_WRAPPER = f"""
-    addiu $sp, $sp, -24
-    sw    $ra, 16($sp)
+    addiu $sp, $sp, -32
+    sw    $ra, 24($sp)
+    sw    $s0, 16($sp)
     jal   {MOVE:#x}
-    nop
+    or    $s0, $a0, $zero           # the controller state (its +0x5C is the player struct)
     lui   $t0, 0x8000
     ori   $t0, $t0, 0x7570          # BIOS pad buffer, port 1
     lbu   $t1, 1($t0)
     addiu $t2, $zero, 0x73
     bne   $t1, $t2, k_done          # not in analog mode
-    lui   $t1, 0x801E
-    ori   $t1, $t1, 0x0620          # player struct
+    nop
+    lw    $t1, 0x5C($s0)            # player struct
+    nop
+    beq   $t1, $zero, k_done
+    nop
     lhu   $t2, 0x46($t1)
     nop
     bne   $t2, $zero, k_done        # look-offset mode
@@ -470,10 +474,11 @@ k_lx:
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)
 k_done:
-    lw    $ra, 16($sp)
+    lw    $s0, 16($sp)
+    lw    $ra, 24($sp)
     nop
     jr    $ra
-    addiu $sp, $sp, 24
+    addiu $sp, $sp, 32
 """
 
 
@@ -502,7 +507,7 @@ PATCHES = [
     (0x8018C8E4, 0x8018CB50, "addu $s1, $v0, $zero", WEAPON_DRAW),
     # analog sticks: wrapper in the dead GsSetFlatLight, reached from the movement call site
     (STICK_BLOCK, STICK_BLOCK_END, "addiu $sp, $sp, -144", STICK_WRAPPER),
-    (MOVE_CALL, MOVE_CALL + 4, f"jal {MOVE:#x}", f"jal {STICK_BLOCK:#x}"),
+] + [(a, a + 4, f"jal {MOVE:#x}", f"jal {STICK_BLOCK:#x}") for a in MOVE_CALLS] + [
 ] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
 
 
