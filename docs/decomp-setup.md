@@ -200,3 +200,32 @@ Brute-force notes: 30,000 random statement orders of `fn_8018C50C` produced no e
 hit, so its difference is structural (the retail hoists the constant `1` into its own register before the
 fifth argument load). `angle_quadrant` is identical but for one branch target (the loop delay slot is filled
 from the target instead of the fall-through).
+
+## Linked build, first pass (2026-10-26)
+
+**Linker choice.** `psyq/bin/PSYLINK.EXE` (v2.82) is a Win32 program and runs here (`psylink /options
+sources,output,symbol,map,libraries`; `/o` org, `/x` entry, `/gp`, `/p` pure binary, `/e sym=value`).
+`PSYLIB.EXE` and `DUMPOBJ.EXE` are DOS and do not run. So the real link needs no download and no ELF
+conversion: link our ASPSX objects plus the Lib44 `.LIB` files (unpacked locally into the gitignored
+`tools/vendor/psyq44/`) with a `.LNK` script. That full link is the next step; it needs per-object
+splitting of the retail layout (game code and library code are interleaved) and `.data/.sdata/.bss`
+placement, none of which is settled yet.
+
+**What exists now (no linker needed, addresses are fixed):**
+- `tools/build_exe.py` compiles every `decomp/src/*.c` (flags from its `cc-flags:` line), writes each function
+  over the retail bytes at its address and reports. Relocated fields (jal targets, `%hi/%lo`, `$gp` offsets)
+  keep the retail bits, so this checks compiler output, not symbol resolution. Result: 81/86 functions
+  byte-identical, 1620 of 102583 code words (1.6%) are C; the rebuilt image differs from retail in 55 words, all
+  inside the 5 known non-matching functions (`angle_quadrant`, `fn_8018C50C`, `fn_801A3C58`, and the
+  registers-only `fn_801AC214`, `fn_801AC4A8`). The image goes to `build/SLPS_021.07.rebuilt` (gitignored).
+- `tools/objdiff_objs.py` + `objdiff.json`: objdiff does not read Psy-Q LNK objects, so the script converts
+  to ELF (a small writer, one `.text` and one FUNC symbol per function). `base` = our compiled C, `target` =
+  the retail bytes of the same functions; relocated fields are masked on both sides. Open the repo root in
+  `objdiff-windows-x86_64.exe` after `python -I tools/objdiff_objs.py`. Not yet checked in the objdiff GUI
+  (only the ELF headers were verified); the target side is not split-asm, because a per-function slice of the
+  retail bytes is equivalent for comparing and needs no assembler.
+- `tests/test_build.py` covers both.
+
+**Not done:** per-object splat segments, the PSYLINK link, symbol resolution of relocations, a real
+objdiff target from splat's asm (needs a MIPS assembler step; ASPSX can assemble it into LNK, then the same
+converter applies).

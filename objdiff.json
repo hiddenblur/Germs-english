@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/encounter/objdiff/main/config.schema.json",
+  "custom_make": "python",
+  "custom_args": ["-I", "tools/objdiff_objs.py"],
+  "target_dir": "build/objdiff/target",
+  "base_dir": "build/objdiff/base",
+  "build_base": false,
+  "build_target": false,
+  "watch_patterns": ["decomp/src/*.c"],
+  "units": [
+    {"name": "angle", "target_path": "build/objdiff/target/angle.o", "base_path": "build/objdiff/base/angle.o"},
+    {"name": "batch3", "target_path": "build/objdiff/target/batch3.o", "base_path": "build/objdiff/base/batch3.o"},
+    {"name": "batch4", "target_path": "build/objdiff/target/batch4.o", "base_path": "build/objdiff/base/batch4.o"},
+    {"name": "batch5", "target_path": "build/objdiff/target/batch5.o", "base_path": "build/objdiff/base/batch5.o"},
+    {"name": "batch6", "target_path": "build/objdiff/target/batch6.o", "base_path": "build/objdiff/base/batch6.o"},
+    {"name": "batch7", "target_path": "build/objdiff/target/batch7.o", "base_path": "build/objdiff/base/batch7.o"},
+    {"name": "calls1", "target_path": "build/objdiff/target/calls1.o", "base_path": "build/objdiff/base/calls1.o"},
+    {"name": "calls2", "target_path": "build/objdiff/target/calls2.o", "base_path": "build/objdiff/base/calls2.o"},
+    {"name": "leaf1", "target_path": "build/objdiff/target/leaf1.o", "base_path": "build/objdiff/base/leaf1.o"},
+    {"name": "leaf2", "target_path": "build/objdiff/target/leaf2.o", "base_path": "build/objdiff/base/leaf2.o"},
+    {"name": "leaf3", "target_path": "build/objdiff/target/leaf3.o", "base_path": "build/objdiff/base/leaf3.o"},
+    {"name": "leaf4", "target_path": "build/objdiff/target/leaf4.o", "base_path": "build/objdiff/base/leaf4.o"},
+    {"name": "lookup", "target_path": "build/objdiff/target/lookup.o", "base_path": "build/objdiff/base/lookup.o"},
+    {"name": "misc1", "target_path": "build/objdiff/target/misc1.o", "base_path": "build/objdiff/base/misc1.o"},
+    {"name": "misc2", "target_path": "build/objdiff/target/misc2.o", "base_path": "build/objdiff/base/misc2.o"},
+    {"name": "pools", "target_path": "build/objdiff/target/pools.o", "base_path": "build/objdiff/base/pools.o"},
+    {"name": "queue", "target_path": "build/objdiff/target/queue.o", "base_path": "build/objdiff/base/queue.o"},
+    {"name": "special", "target_path": "build/objdiff/target/special.o", "base_path": "build/objdiff/base/special.o"},
+    {"name": "tables", "target_path": "build/objdiff/target/tables.o", "base_path": "build/objdiff/base/tables.o"}
+  ]
+}
