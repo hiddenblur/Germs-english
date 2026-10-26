@@ -8,6 +8,7 @@ RES = ROOT / "extracted" / "files" / "RES.R"
 sys.path.insert(0, str(ROOT / "tools"))
 import font  # noqa: E402
 import images  # noqa: E402
+import image_edit  # noqa: E402,F401
 import insert_script  # noqa: E402
 import tim  # noqa: E402
 
@@ -126,6 +127,37 @@ class ImageTests(unittest.TestCase):
         new = tim.parse(bytes(buf), t.offset)
         self.assertEqual(new.clut, t.clut)
         self.assertEqual(set(new.pixels), set(t.pixels))     # same two colours
+
+
+@unittest.skipUnless((ROOT / "extracted" / "files" / "M" / "A" / "SH1.RM").exists(), "needs the extracted disc")
+class ImageEditTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.t = tim.parse((ROOT / "extracted" / "files" / "M" / "A" / "SH1.RM").read_bytes(), 0xB9004)
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def test_png_round_trip_keeps_every_index(self):
+        import image_edit
+        for scale in (1, 4):
+            (self.tmp / "a.png").write_bytes(tim.to_png(self.t, scale))
+            self.assertEqual(image_edit.apply_png(self.t, self.tmp / "a.png", self.t.pixels), self.t.pixels)
+
+    def test_edited_pixel_gets_the_nearest_palette_entry(self):
+        import image_edit
+        w = self.t.width
+        png = bytearray(tim.to_png(self.t, 1))
+        px = list(self.t.pixels)
+        px[5 * w + 5] = 7                       # a different palette entry
+        (self.tmp / "b.png").write_bytes(tim.png(w, self.t.height, bytes(px), [tim.rgb(c) for c in self.t.clut]))
+        out = image_edit.apply_png(self.t, self.tmp / "b.png", self.t.pixels)
+        self.assertEqual(out[5 * w + 5], 7)
+        self.assertEqual(sum(a != b for a, b in zip(out, self.t.pixels)), 1)
+
+    def test_wrong_size_is_refused(self):
+        import image_edit
+        (self.tmp / "c.png").write_bytes(tim.png(10, 10, bytes(100), [(0, 0, 0)]))
+        with self.assertRaises(ValueError):
+            image_edit.apply_png(self.t, self.tmp / "c.png", self.t.pixels)
 
 
 if __name__ == "__main__":

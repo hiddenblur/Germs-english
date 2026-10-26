@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # -I drops the script dir
+import image_edit
 import images
 import layout
 import sce
@@ -178,6 +179,7 @@ def apply(root, tr):
         if name not in bufs:                # menus in the room files (M/A/*.RM)
             bufs[name] = bytearray((files / name).read_bytes())
         images.apply(bufs[name], image_tr, problems, name)
+    image_edit.apply_edits(bufs, problems, set(image_tr))  # hand-edited PNGs in edits/ win over the text regions
 
     # 1. strings outside commands go in place, before SCE.S is parsed
     cmd_edits = {}

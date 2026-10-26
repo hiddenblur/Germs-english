@@ -24,6 +24,9 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
   screens with artwork take `{"regions": [...]}` rectangles, see `translations/screens.json`),
   `tools/tim.py` (TIM read/write and PNG export), `tools/font.py` (our own pixel font; never draw
   English with the BIOS font into images, since it can't be redistributed).
+- `edits/`: hand-edited menu PNGs (gitignored: game artwork). `python -I tools/image_edit.py export` writes the
+  translated room-file menus (M/A/*.RM) there; the inserter draws every PNG in edits/ over its TIM, after the
+  text regions. See the docstring in `tools/image_edit.py`.
 - `build/`: inserter output and rebuilt disc images (gitignored).
 
 ## Building a patched disc
