@@ -10,7 +10,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 HAVE = (ROOT / "psyq" / "bin" / "CC1PSX.EXE").exists() and (ROOT / "extracted" / "files" / "SLPS_021.07").exists()
-MATCHING = {"decomp/src/angle.c": ["norm_angle"], "decomp/src/tables.c": ["tbl_short"]}
+MATCHING = {
+    "decomp/src/angle.c": ["norm_angle"],
+    "decomp/src/tables.c": ["tbl_short"],
+    "decomp/src/leaf1.c": ["fn_8017D564", "fn_8018D1F0", "fn_8019A6A4", "fn_801A216C", "fn_801A3DBC", "fn_801AC9B4",
+                           "fn_80186230", "fn_80186258", "fn_80186280", "fn_801AC55C", "fn_8019A664", "fn_80199FA0",
+                           "fn_8017E504"],
+    "decomp/src/leaf2.c": ["fn_801AC464"],
+}
 
 
 @unittest.skipUnless(HAVE, "needs psyq/ and extracted/")

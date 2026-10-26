@@ -4,10 +4,12 @@ Pipeline (all Win32 tools in psyq/bin): CPPPSX -> CC1PSX -> ASPSX -> a Psy-Q LNK
 .text bytes are read with psyqlib.py. Words the linker would rewrite (calls, %hi/%lo of globals)
 are masked, the same way libmatch.py does, so only the compiler's output is compared.
 
-Usage: python -I tools/cc_check.py decomp/src/foo.c [--flags "-O2 -G8"] [--show]
-Each function in the C file is looked up in decomp/functions.txt ("name 0xADDRESS words").
+Usage: python -I tools/cc_check.py decomp/src/foo.c [--flags "-O2 -fno-schedule-insns2"] [--show]
+A `/* cc-flags: ... */` comment in the first lines of the C file sets its flags (objects of the
+retail build were compiled with different ones). Each function in the C file is looked up in decomp/functions.txt ("name 0xADDRESS words").
 """
 import argparse
+import re
 import struct
 import subprocess
 import sys
@@ -30,7 +32,10 @@ def run(tool, *args, stdout=None):
     return r
 
 
-def compile_c(src, flags="-O2"):
+DEFAULT_FLAGS = "-O2 -fno-schedule-insns2"     # what the retail code was built with (docs/decomp-setup.md)
+
+
+def compile_c(src, flags=DEFAULT_FLAGS):
     """Return (sections, patches, xdefs) of the object built from `src`."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -63,10 +68,16 @@ def mask(code, offsets):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("source")
-    ap.add_argument("--flags", default="-O2")
+    ap.add_argument("--flags", default=None, help="default: the `cc-flags:` comment in the file, else DEFAULT_FLAGS")
     ap.add_argument("--show", action="store_true", help="print both instruction streams")
     args = ap.parse_args()
-    obj = compile_c(Path(args.source).resolve(), args.flags)
+    source = Path(args.source).resolve()
+    flags = args.flags
+    if flags is None:
+        m = re.search(r"cc-flags:[ \t]*(.+?)[ \t]*(\*/|$)", source.read_text()[:400], re.M)
+        flags = m.group(1) if m else DEFAULT_FLAGS
+    print(f"# {source.name}: cc1psx {flags}")
+    obj = compile_c(source, flags)
     text_id = next(i for i, s in obj["sections"].items() if s[0] == ".text")
     code = bytes(obj["sections"][text_id][1])
     masked = {off & ~3 for sec, off, _ in obj["patches"] if sec == text_id}

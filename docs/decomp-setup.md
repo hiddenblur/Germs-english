@@ -77,3 +77,28 @@ What this settles:
 `psyqlib.py` learned two more opcodes from ASPSX objects (28 = source file, 60 = precedes an XBSS).
 The `angle_quadrant` near-miss: about 15 source shapes tried (int/short temporaries, `inline` helper,
 unsigned range tests, `for(;;)`, nested ifs); none changed the register choice.
+
+## Batch of 16 byte-identical functions (2026-10-26)
+
+`decomp/src/` now holds C for 16 retail functions that `cc_check.py` reports as byte-identical
+(`tests/test_cc.py` lists them). Findings:
+
+- **Flags differ per object.** Most functions only match with `-O2 -fno-schedule-insns2` (the post-reload
+  scheduler off); `fn_801AC464` (and so its object) only matches with plain `-O2`. A `/* cc-flags: ... */`
+  comment at the top of each C file sets them; `cc_check.py` reads it. `norm_angle` and the tiny
+  functions match either way.
+- **Globals decide the addressing.** A variable *defined* in the file (`int ga;`, `short gsv;`) goes in
+  `.sbss` and is reached through `$gp`; an `extern` is not small data, even if tiny, and gets `lui`/offset.
+  A big object (`typedef struct { short h[0x80]; } H; extern H g;`) gives the retail `lui` + `addiu` base.
+  Fixed addresses (`*(short *)0x801E58C`) give `lui` + offset with the register reuse the retail code has.
+- **Register allocation follows declaration order:** `int i = 0; short *p = ...; for (; i < 5; i++)`
+  matched where `for (i = 0; ...)` with `p` declared first did not (counter and pointer registers swapped).
+- **Statement order is the store order** (the scheduler never reorders stores): `fn_801AC464` needs
+  `w[6]`, `w[12]`, `w[14]`, `w[13]` as in the retail code.
+- **Parser fix:** relocation patch offsets in a Psy-Q object are relative to the start of the code chunk
+  they follow, not the section. `psyqlib.py` now adds the chunk start; before, `cc_check.py` masked the
+  wrong words and `libmatch.py` under-counted LIBPAD (3 -> 30 of 42 functions found with Lib44).
+
+Not matching yet: `angle_quadrant` (same code, but the loop branch delay slot is filled from the target
+instead of the fall-through: `beqz v0, +4` vs retail `beqz v0, 0`) and `set_hi` at `0x8018BAE0` (retail has
+no delay-slot fill and different registers; probably another module or toolchain).

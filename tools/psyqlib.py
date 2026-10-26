@@ -42,6 +42,7 @@ def parse_obj(d, p):
     p += 4
     sections = {}                       # id -> [name, bytearray]
     cur = None
+    chunk = 0
     patches = []                        # (section id, offset, tag)
     funcs = []                          # (section, offset, name)
     xdefs = {}
@@ -52,6 +53,7 @@ def parse_obj(d, p):
             break
         elif op == 2:                   # code/data bytes
             n = struct.unpack_from('<H', d, p)[0]
+            chunk = len(sections[cur][1])   # patch offsets are relative to the start of this chunk
             sections[cur][1] += d[p + 2:p + 2 + n]
             p += 2 + n
         elif op == 8:                   # run of zeroes? (bss reserve)
@@ -71,7 +73,7 @@ def parse_obj(d, p):
             tag = d[p]
             off = struct.unpack_from('<H', d, p + 1)[0]
             q, _ = expr(d, p + 3)
-            patches.append((cur, off, tag))
+            patches.append((cur, chunk + off, tag))
             p = q
         elif op == 12:                  # xdef
             sid, sec, off = struct.unpack_from('<HHI', d, p)
