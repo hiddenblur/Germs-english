@@ -138,3 +138,32 @@ Source-shape lessons from this batch:
 - `return c ? a : b;` and `if (c) return a; return b;` lay out the branches differently: match the
   retail fall-through (`fn_80176734` is a ternary, `fn_80199D18` tests `!= 0` first).
 - Declaration order is register order (`fn_8018D294`: pointer first, then `short i`).
+
+## gcc 2.8.1 reproduces the retail code (2026-10-26)
+
+**The game was built with gcc 2.8.1, `-O2 -G8`.** `tools/oldgcc/` builds the psx variants of old gcc
+natively on Windows (see its README; binaries in `tools/vendor/oldgcc/bin`), and `cc_check.py` uses
+2.8.1 by default (`--cc1 sdk|2.7.2|2.8.1`). Of the 61 functions with C in `decomp/src/`:
+
+| Compiler | byte-identical | same code, other registers | not matching |
+|---|---|---|---|
+| SDK `CC1PSX.EXE` (gcc 2.95.2) | 30 | 10 | 21 |
+| gcc 2.7.2 psx | 9 | 1 | 51 |
+| **gcc 2.8.1 psx** | **52** | 0 | 9 |
+
+- Every one of the 52 matches uses **plain `-O2`** (and `-G8`): no scheduler flags. The earlier "per-module
+  flags" were an artifact of using the wrong compiler (see the previous section; `decomp/flags.txt` has
+  the per-function table for all three compilers). There is nothing to record per module: one flag set.
+- All 8 functions that were "registers only" with the SDK compiler now match exactly, as do the whole
+  pointer-wrapper family (`fn_8017D170` and 5 siblings) that never matched before.
+- 2.7.2 only matches trivial functions, so the game is not 2.7.2.
+- Sources written for 2.95 sometimes need changing: `fn_801AC464` matched in a reordered statement
+  order for 2.95 and matches in the natural order for 2.8.1; `fn_80184408` needs the shared `-1` in a
+  variable (`int m1 = -1;`); `fn_8018F91C` needs `for (...; i++, p += 0x20)`.
+- Pipeline notes: `cc1` needs `TMPDIR` and `-G8`; 2.8.1 writes `.comm` after the code, so `cc_check.py`
+  hoists it before ASPSX (single pass) to get `$gp` accesses.
+
+Still not matching (all with 2.8.1): `angle_quadrant`, `fn_801A3D74`, `fn_801A0690`, `fn_8018C50C`,
+`fn_80186838`, and the four table lookups in `lookup.c` (`fn_801767D4`, `fn_80176890`, `fn_80188FEC`,
+`fn_801891A4`: retail copies the loop count and id into `$a0`/`$a3` before the loop). `set_hi`
+(`0x8018BAE0`) was dropped. Next: more functions, then splat per-object segments and a link step.
