@@ -102,3 +102,19 @@ called from `0x801A8880` (city, a1 = 2), `0x801942E4` (office, a1 = 0, pad word 
 through `[a0 + 0x5C]` instead of a fixed address and saves `s0`/`ra` around the call.
 Boot check, 2026-10-25: a disc built with `insert_script` + `patch_exe` + `build_disc` boots, shows the
 English intro, and hits the wrapper in the office (execute breakpoint at `0x801B1F90`, caller `0x801942EC`).
+
+## Buttons die in analog mode (found 2026-10-25, fixed)
+
+The game reads the pad through libetc `PadRead` (`0x801CCA40`), which calls the BIOS routine B0:0x16
+(stub `0x801CCA94`). That routine fills the word at `0x801E6DC0` from the pad buffer `0x80007570`, but
+only for ID `0x41` (digital) or `0x23` (neGcon; BIOS code at `0x61F8`-`0x6244`). With an analog pad
+(ID `0x73`) the word stays `0xFFFFFFFF`, so the held-buttons word `0x801E6DA0` is 0 and **no button
+works** while analog mode is on (user report: Circle dead; I then saw Triangle dead too). This
+also explains the earlier "Up does nothing" results in analog mode. The same would happen on a
+real console with the DualShock Analog button on.
+
+Fix (`PAD_FIX_ASM` in `tools/patch_exe.py`, after the stick wrapper): the call at `0x801CCA48` goes
+through a wrapper that runs the BIOS call, then for ID `0x73` with status 0 stores
+`(buf[2] << 8) | buf[3]` into the halfword at `0x801E6DC0`, as the BIOS does for a digital pad.
+Tested in DuckStation (Triangle read as `0x10` in the held word, Circle triggered a scene change) and
+with unicorn (`PadButtons` in `tests/test_sticks.py`).

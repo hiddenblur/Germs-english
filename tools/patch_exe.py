@@ -363,6 +363,43 @@ wd_upload:
     nop
 """
 
+# Buttons in analog mode. The game reads the pad through libetc PadRead (0x801CCA40), which calls
+# a BIOS routine (B0:0x16) that fills the word at 0x801E6DC0 from the pad buffer 0x80007570, but
+# only for a digital pad (ID 0x41) or a neGcon (0x23). An analog pad (0x73) leaves the word at
+# 0xFFFFFFFF, so no button registers at all while analog mode is on (found: Circle and every other
+# button stopped working once the sticks were enabled). This wrapper runs the BIOS call and then,
+# for ID 0x73, stores the two button bytes the way the BIOS does: halfword = (buf[2] << 8) | buf[3].
+BIOS_PAD = 0x801CCA94           # stub that jumps to the BIOS B0 table, function 0x16
+PAD_READ_CALL = 0x801CCA48      # inside PadRead
+PAD_FIX_ASM = f"""
+    addiu $sp, $sp, -24
+    sw    $ra, 16($sp)
+    jal   {BIOS_PAD:#x}
+    nop
+    lui   $t0, 0x8000
+    ori   $t0, $t0, 0x7570          # BIOS pad buffer, port 1
+    lbu   $t1, 1($t0)
+    addiu $t2, $zero, 0x73
+    bne   $t1, $t2, f_done          # only an analog pad needs this
+    nop
+    lbu   $t1, 0($t0)
+    nop
+    bne   $t1, $zero, f_done        # status: no pad answered
+    nop
+    lbu   $t3, 2($t0)
+    lbu   $t4, 3($t0)
+    nop
+    sll   $t3, $t3, 8
+    or    $t3, $t3, $t4
+    lui   $t5, 0x801E
+    sh    $t3, 0x6DC0($t5)
+f_done:
+    lw    $ra, 16($sp)
+    nop
+    jr    $ra
+    addiu $sp, $sp, 24
+"""
+
 # Analog sticks (prototype). The game only reads the digital buttons, but an analog pad in analog
 # mode (ID 0x73) also leaves the sticks in the BIOS pad buffer: 0x80007570 +4 RX, +5 RY, +6 LX,
 # +7 LY (0x80 = centre). The movement function 0x80199548 (docs/controls.md) is called from
@@ -483,6 +520,8 @@ k_done:
 
 
 # (start, end, expected retail first instruction, new code)
+PAD_FIX = STICK_BLOCK + len(asm(STICK_WRAPPER, STICK_BLOCK))
+
 PATCHES = [
     # narration typewriter
     (0x801828E8, 0x801828EC, "slti $v0, $v0, 0x10", "slti $v0, $v0, 0x20"),
@@ -506,7 +545,8 @@ PATCHES = [
     # weapon name renderer
     (0x8018C8E4, 0x8018CB50, "addu $s1, $v0, $zero", WEAPON_DRAW),
     # analog sticks: wrapper in the dead GsSetFlatLight, reached from the movement call site
-    (STICK_BLOCK, STICK_BLOCK_END, "addiu $sp, $sp, -144", STICK_WRAPPER),
+    (STICK_BLOCK, STICK_BLOCK_END, "addiu $sp, $sp, -144", STICK_WRAPPER + PAD_FIX_ASM),
+    (PAD_READ_CALL, PAD_READ_CALL + 4, f"jal {BIOS_PAD:#x}", f"jal {PAD_FIX:#x}"),
 ] + [(a, a + 4, f"jal {MOVE:#x}", f"jal {STICK_BLOCK:#x}") for a in MOVE_CALLS] + [
 ] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
 

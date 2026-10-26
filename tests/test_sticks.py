@@ -104,5 +104,51 @@ class Stick(unittest.TestCase):
             self.assertEqual(word, 0x0C000000 | (patch_exe.STICK_BLOCK >> 2 & 0x3FFFFFF), hex(call))
 
 
+class PadButtons(unittest.TestCase):
+    """PadRead's BIOS call only fills the button word for a digital pad; the wrapper does it for 0x73."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.exe = patch_exe.apply(EXE_PATH.read_bytes())
+
+    def read_word(self, pad_id, b2=0xFF, b3=0xFF, status=0, before=0xFFFFFFFF):
+        uc = Uc(UC_ARCH_MIPS, UC_MODE_32 | UC_MODE_LITTLE_ENDIAN)
+        uc.mem_map(P(0x80000000), 0x200000)
+        uc.mem_write(P(LOAD), self.exe[0x800:])
+        uc.mem_write(P(PAD), bytes([status, pad_id, b2, b3, 0x80, 0x80, 0x80, 0x80]))
+        uc.mem_write(P(0x801E6DC0), struct.pack("<I", before))
+        self.bios_calls = 0
+
+        def hook(uc, addr, size, _):
+            if addr == SENTINEL:
+                uc.emu_stop()
+            elif addr == patch_exe.BIOS_PAD:
+                self.bios_calls += 1                  # the BIOS routine: leaves the word as it is
+                uc.reg_write(R.UC_MIPS_REG_PC, uc.reg_read(R.UC_MIPS_REG_RA))
+        uc.hook_add(UC_HOOK_CODE, hook)
+        uc.reg_write(R.UC_MIPS_REG_SP, 0x801FF000)
+        uc.reg_write(R.UC_MIPS_REG_RA, SENTINEL)
+        uc.emu_start(patch_exe.PAD_FIX, SENTINEL)
+        self.sp = uc.reg_read(R.UC_MIPS_REG_SP)
+        return struct.unpack("<I", uc.mem_read(P(0x801E6DC0), 4))[0]
+
+    def test_analog_buttons_reach_the_word(self):
+        # Circle held (buf[2] = 0xFF, buf[3] = 0xDF): the BIOS word is ~ of this halfword
+        self.assertEqual(self.read_word(0x73, 0xFF, 0xDF) & 0xFFFF, 0xFFDF)
+        self.assertEqual(self.read_word(0x73, 0xEF, 0xFF) & 0xFFFF, 0xEFFF)       # Up
+        self.assertEqual(self.read_word(0x73, 0xFF, 0xFF), 0xFFFFFFFF)           # nothing held
+        self.assertEqual(self.read_word(0x73, 0x7F, 0xFF) >> 16, 0xFFFF)         # port 2 half untouched
+        self.assertEqual(self.bios_calls, 1)
+        self.assertEqual(self.sp, 0x801FF000)
+
+    def test_digital_and_missing_pads_are_left_to_the_bios(self):
+        self.assertEqual(self.read_word(0x41, 0xEF, 0xFF, before=0xFFFF1234), 0xFFFF1234)
+        self.assertEqual(self.read_word(0x73, 0xEF, 0xFF, status=0xFF, before=0xFFFFFFFF), 0xFFFFFFFF)
+
+    def test_padread_calls_the_wrapper(self):
+        word = struct.unpack_from("<I", self.exe, patch_exe.PAD_READ_CALL - LOAD + patch_exe.HEADER)[0]
+        self.assertEqual(word, 0x0C000000 | (patch_exe.PAD_FIX >> 2 & 0x3FFFFFF))
+
+
 if __name__ == "__main__":
     unittest.main()
