@@ -24,6 +24,13 @@ class BuildExe(unittest.TestCase):
             if image[i:i + 4] != exe[i:i + 4]:
                 self.assertTrue(any(s <= i < s + n for s, n in spans), hex(i))
 
+    @unittest.skipUnless((ROOT / "tools" / "vendor" / "psyq44" / "LIB").exists() and (ROOT / "decomp" / "objects.txt").exists(),
+                         "needs the unpacked Lib44 (tools/vendor/psyq44)")
+    def test_library_modules_relink_to_retail(self):
+        import lib_relink
+        bad = [(m, st) for _, _, _, m, st, _, _ in lib_relink.relinked_modules() if st != "OK"]
+        self.assertEqual(bad, [])
+
     def test_elf_for_objdiff(self):
         import objdiff_objs
         base, target, names = objdiff_objs.convert(ROOT / "decomp" / "src" / "leaf4.c")

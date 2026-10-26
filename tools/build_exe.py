@@ -65,23 +65,50 @@ def build(cc1="2.8.1"):
     return bytes(image), exe, results
 
 
+def add_libraries(image):
+    """Write the Lib44 modules, relinked by PSYLINK at their retail addresses, over `image`.
+    Words that point into data (not placed by this build yet) keep the retail bytes.
+    Returns [(addr, size, lib, module, status)]."""
+    import lib_relink
+    image = bytearray(image)
+    mods = []
+    for addr, size, lib, mod, status, code, skip in lib_relink.relinked_modules():
+        base = addr - cc_check.EXE_BASE
+        for i in range(0, size, 4):
+            if i not in skip:
+                image[base + i:base + i + 4] = code[i:i + 4]
+        mods.append((addr, size, lib, mod, status))
+    return bytes(image), mods
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(ROOT / "build" / "SLPS_021.07.rebuilt"))
     ap.add_argument("--cc1", default="2.8.1", choices=sorted(cc_check.COMPILERS))
+    ap.add_argument("--no-libs", action="store_true", help="do not relink the library modules with PSYLINK")
     args = ap.parse_args()
     image, exe, results = build(args.cc1)
+    mods = []
+    if (lib_relink_dir := ROOT / "tools" / "vendor" / "psyq44" / "LIB").exists() and not args.no_libs:
+        image, mods = add_libraries(image)
+        print(f"{sum(m[4] == 'OK' for m in mods)}/{len(mods)} library modules relinked by PSYLINK equal retail "
+              f"({sum(m[1] for m in mods) // 4} code words)")
+        for addr, _, lib, mod, status in mods:
+            if status != "OK":
+                print(f"  {lib} {mod} @ 0x{addr:08X}: {status}")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(image)
     words = sum(w for _, _, w, _ in results)
+    lib_words = sum(m[1] for m in mods) // 4
     total = (CODE[1] - CODE[0]) // 4
     for name, addr, w, st in results:
         if st != "MATCH":
             print(f"{name} @ 0x{addr:08X} ({w} words): {st}")
     diff = [i for i in range(0, len(exe), 4) if image[i:i + 4] != exe[i:i + 4]]
-    print(f"{sum(st == 'MATCH' for *_, st in results)}/{len(results)} functions byte-identical; "
-          f"{words}/{total} code words ({100 * words / total:.1f}%) are C, the rest is still asm")
+    print(f"{sum(st == 'MATCH' for *_, st in results)}/{len(results)} functions byte-identical; of {total} code words, "
+          f"{words} ({100 * words / total:.1f}%) are our C, {lib_words} ({100 * lib_words / total:.1f}%) are linked "
+          f"library modules, {total - words - lib_words} are still asm")
     print(f"rebuilt image: {len(diff)} words differ from the retail EXE -> {out}")
     sys.exit(1 if diff else 0)
 

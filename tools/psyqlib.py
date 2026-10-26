@@ -21,12 +21,8 @@ def expr(d, p):
         return p + 4, []
     if t == 0x02:                       # symbol
         return p + 2, [struct.unpack_from('<H', d, p)[0]]
-    if t == 0x04:                       # section base
-        return p + 2, []
-    if t == 0x0C:                       # section start
-        return p + 2, []
-    if t == 0x16:                       # section end / offset
-        return p + 2, []
+    if t in (0x04, 0x0C, 0x16):         # section base / start / end
+        return p + 2, [('sec', struct.unpack_from('<H', d, p)[0])]
     if t == 0x14:                       # bank
         return p + 2, []
     if t in (0x1E, 0x20, 0x22, 0x24, 0x26, 0x28, 0x2A, 0x2C, 0x2E, 0x30, 0x32, 0x34, 0x36, 0x38, 0x3A, 0x3C):
@@ -44,6 +40,9 @@ def parse_obj(d, p):
     cur = None
     chunk = 0
     patches = []                        # (section id, offset, tag)
+    patch_refs = []                     # (section id, offset, symbol ids / ('sec', id) the patch refers to)
+    xrefs = {}                          # symbol id -> external name
+    sym_ids = {}                        # symbol id -> xdef name
     funcs = []                          # (section, offset, name)
     xdefs = {}
     while True:
@@ -72,16 +71,18 @@ def parse_obj(d, p):
         elif op == 10:                  # patch
             tag = d[p]
             off = struct.unpack_from('<H', d, p + 1)[0]
-            q, _ = expr(d, p + 3)
+            q, refs = expr(d, p + 3)
             patches.append((cur, chunk + off, tag))
+            patch_refs.append((cur, chunk + off, refs))
             p = q
         elif op == 12:                  # xdef
             sid, sec, off = struct.unpack_from('<HHI', d, p)
             name, p = pstr(d, p + 8)
             xdefs[name] = (sec, off)
+            sym_ids[sid] = name
         elif op == 14:                  # xref
-            p += 2
-            _, p = pstr(d, p)
+            sid = struct.unpack_from('<H', d, p)[0]
+            xrefs[sid], p = pstr(d, p + 2)
         elif op == 16:                  # section def
             sid, grp = struct.unpack_from('<HH', d, p)
             name, p = pstr(d, p + 5)
@@ -136,7 +137,8 @@ def parse_obj(d, p):
             _, p = pstr(d, p)
         else:
             raise ValueError('opcode %d at %d' % (op, p - 1))
-    return dict(sections=sections, patches=patches, funcs=funcs, xdefs=xdefs, end=p)
+    return dict(sections=sections, patches=patches, funcs=funcs, xdefs=xdefs, end=p,
+                patch_refs=patch_refs, xrefs=xrefs, sym_ids=sym_ids)
 
 
 def modules(path):

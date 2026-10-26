@@ -20,3 +20,4 @@ decomp/include/
 decomp/build/
 decomp/*.ld
 decomp/undefined_*.txt
+decomp/splat_src/

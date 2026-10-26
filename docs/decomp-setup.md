@@ -226,6 +226,32 @@ placement, none of which is settled yet.
   retail bytes is equivalent for comparing and needs no assembler.
 - `tests/test_build.py` covers both.
 
-**Not done:** per-object splat segments, the PSYLINK link, symbol resolution of relocations, a real
-objdiff target from splat's asm (needs a MIPS assembler step; ASPSX can assemble it into LNK, then the same
-converter applies).
+## Per-object split and PSYLINK relink (2026-10-26)
+
+- `tools/objmap.py` finds whole Lib44 modules in the EXE (their `.text` with relocated words masked) and writes
+  `decomp/objects.txt` (address, size, library, module; addresses and names only, committed). 303 modules,
+  137,584 bytes, from `0x801AC9D0` to `0x801D1E70`; 15 short modules match in several places and are left out;
+  identical modules (LIBC/LIBC2 QSORT and MEMMOVE, GS_132/VWUNIT, ...) are folded into one line with `also:`.
+  15 gaps (15 KB) remain inside that range: game code (the pad update `0x801CD6B4` sits in one) and the ambiguous modules.
+- `tools/gen_splat.py` writes `decomp/germs.yaml` with one subsegment per object: 303 library modules and
+  gap runs as `asm`, the 86 C functions as `c` (one segment per function, since our `decomp/src` files are
+  groupings we made, not the original compilation units, and their functions are scattered). Splat's stubs go to
+  `decomp/splat_src/` (gitignored) so they never mix with our C. `.rdata`, `.data/.sdata` and `.bss` are still
+  one segment each: nothing says which object owns which data yet. Splat's `.ld` is of limited use (the link
+  is done by PSYLINK, not GNU ld).
+- `tools/lib_relink.py` cuts each module's object out of its Lib44 `.LIB`, links it with the real
+  `PSYLINK.EXE` (`/c /p /m @m.lnk,...`; the script has `org`, `include "m.obj"` and `name equ addr` lines for
+  every external; `/e` has a length limit) so its `.text` lands on its retail address, and compares with the
+  EXE. **All 303 modules relink to the retail bytes**; 1,969 relocated words (jal targets, `%hi/%lo` of text
+  symbols) were resolved by the linker and equal retail. 4,686 words that point into data are skipped, because
+  data is not placed yet. Symbols come from the module map plus `decomp/symbol_addrs.txt`; the aliases
+  `SsUtReverbOff`/`SpuInit` (same 8 instructions, two places) are settled from the retail call sites
+  (`OVERRIDES`). PSYLINK is case sensitive only with `/c`, and `equ` names must match the object's case.
+- `tools/build_exe.py` now writes the PSYLINK-linked library modules and our compiled C over the retail
+  bytes: of 102,583 code words, 1,620 (1.6%) are our C, 34,396 (33.5%) are linked library modules and
+  66,567 are still asm. The result differs from retail only in the 5 non-matching functions (55 words).
+- `psyqlib.parse_obj` now also returns `xrefs`, `sym_ids` and `patch_refs` (which symbols each patch uses).
+
+Next: split `.data/.sdata/.bss` by owner (libraries' own data from the `.LIB` objects first, then the globals
+the C files define), then link the C objects too so their data refs and intra-file calls are resolved by
+PSYLINK instead of copied from retail; turn the remaining asm into C.
