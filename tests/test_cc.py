@@ -17,6 +17,10 @@ MATCHING = {
                            "fn_80186230", "fn_80186258", "fn_80186280", "fn_801AC55C", "fn_8019A664", "fn_80199FA0",
                            "fn_8017E504"],
     "decomp/src/leaf2.c": ["fn_801AC464"],
+    "decomp/src/calls1.c": ["fn_8017D3F0", "fn_8018BD60", "fn_801A8EFC", "fn_801A69E0", "fn_80176734"],
+    "decomp/src/calls2.c": ["fn_801854B8", "fn_80192F20", "fn_801A20A8", "fn_801A4370", "fn_801A533C"],
+    "decomp/src/leaf3.c": ["fn_80188DE8", "fn_80199D18", "fn_8018D294"],
+    "decomp/src/leaf4.c": ["fn_8018D1A0"],
 }
 
 
