@@ -31,7 +31,7 @@ class Stick(unittest.TestCase):
     def setUpClass(cls):
         cls.exe = patch_exe.apply(EXE_PATH.read_bytes())
 
-    def run_wrapper(self, pad_id=0x73, rx=0x80, ry=0x80, lx=0x80, ly=0x80, dt=3, mode=0, yaw=100, pitch=0):
+    def run_wrapper(self, pad_id=0x73, rx=0x80, ry=0x80, lx=0x80, ly=0x80, dt=3, mode=0, yaw=100, pitch=0, a1=2):
         uc = Uc(UC_ARCH_MIPS, UC_MODE_32 | UC_MODE_LITTLE_ENDIAN)
         uc.mem_map(P(0x80000000), 0x200000)
         uc.mem_write(P(LOAD), self.exe[0x800:])
@@ -54,9 +54,12 @@ class Stick(unittest.TestCase):
         uc.reg_write(R.UC_MIPS_REG_RA, SENTINEL)
         uc.reg_write(R.UC_MIPS_REG_A0, CTRL)
         uc.reg_write(R.UC_MIPS_REG_S0, 0x1234)
+        uc.reg_write(R.UC_MIPS_REG_S1, 0x5678)
+        uc.reg_write(R.UC_MIPS_REG_A1, a1)
         uc.emu_start(patch_exe.STICK_BLOCK, SENTINEL)
         self.sp = uc.reg_read(R.UC_MIPS_REG_SP)
         self.s0 = uc.reg_read(R.UC_MIPS_REG_S0)
+        self.s1 = uc.reg_read(R.UC_MIPS_REG_S1)
         h = lambda a: struct.unpack("<h", uc.mem_read(P(a), 2))[0]
         return dict(yaw=h(YAW), pitch=h(PITCH), strafe=h(STRAFE), fwd=h(FORWARD), moving=h(MOVING))
 
@@ -64,7 +67,7 @@ class Stick(unittest.TestCase):
         self.run_wrapper()
         self.assertEqual(self.moves, 1)
         self.assertEqual(self.sp, 0x801FF000)
-        self.assertEqual(self.s0, 0x1234)             # callee-saved register restored
+        self.assertEqual((self.s0, self.s1), (0x1234, 0x5678))   # callee-saved registers restored
 
     def test_idle_and_digital_leave_the_player_alone(self):
         idle = dict(yaw=100, pitch=0, strafe=0, fwd=0, moving=0)
@@ -92,6 +95,14 @@ class Stick(unittest.TestCase):
         self.assertEqual((r["fwd"], r["moving"], r["yaw"]), (((128 * 3) * 11) >> 7, 1, 100))   # 33
         r = self.run_wrapper(ly=0xFF)
         self.assertEqual((r["fwd"], r["moving"]), (((-127 * 3) * 11) >> 7, 1))
+
+    def test_outside_the_city_velocities_are_x10_like_retail(self):
+        for a1 in (0, 1):
+            r = self.run_wrapper(ly=0x00, lx=0xFF, a1=a1)
+            self.assertEqual(r["fwd"], (((128 * 3) * 11) >> 7) * 10)
+            self.assertEqual(r["strafe"], (((127 * 3) * 6) >> 7) * 10)
+        r = self.run_wrapper(ly=0xFF, a1=0)
+        self.assertEqual(r["fwd"], (((-127 * 3) * 11) >> 7) * 10)
 
     def test_strafe_left_stick_x(self):
         r = self.run_wrapper(lx=0xFF)

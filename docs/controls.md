@@ -118,3 +118,13 @@ through a wrapper that runs the BIOS call, then for ID `0x73` with status 0 stor
 `(buf[2] << 8) | buf[3]` into the halfword at `0x801E6DC0`, as the BIOS does for a digital pad.
 Tested in DuckStation (Triangle read as `0x10` in the held word, Circle triggered a scene change) and
 with unicorn (`PadButtons` in `tests/test_sticks.py`).
+
+## Speed outside the city (fixed 2026-10-25)
+
+After setting the forward/sideways velocity (`+0x50`/`+0x4E`) from the buttons, `0x80199548` rescales
+it by the mode `a1`: `a1 != 2` (buildings: `0x801942E4` passes 0, `0x8017DF7C` passes 1) multiplies both
+by 10 (`0x801999C8`); `a1 == 2` (city) with `[+0x46] != 0` multiplies by 4, and with `[+0x46] == 0` it
+only applies the `[a0+0x42]` diagonal factors (x0.9 / x0.7). The stick wrapper runs after that, so
+indoors its velocity was 10x too small (user: "walking is very slow in buildings"). It now saves `a1`
+and applies the same x10 when `a1 != 2`. The city path is unchanged (the 0.9/0.7 factor is not
+reproduced). Interiors use finer position units, so the x10 is what makes the pad and stick speeds match.

@@ -435,9 +435,11 @@ def stick(axis, label):
 
 
 STICK_WRAPPER = f"""
-    addiu $sp, $sp, -32
-    sw    $ra, 24($sp)
+    addiu $sp, $sp, -40
+    sw    $ra, 32($sp)
     sw    $s0, 16($sp)
+    sw    $s1, 20($sp)
+    andi  $s1, $a1, 0xFFFF          # mode: 2 = city; anything else gets the retail x10 below
     jal   {MOVE:#x}
     or    $s0, $a0, $zero           # the controller state (its +0x5C is the player struct)
     lui   $t0, 0x8000
@@ -496,6 +498,13 @@ k_ly:
     mult  $t5, $t6
     mflo  $t5
     sra   $t5, $t5, 7
+    addiu $t7, $zero, 2
+    beq   $s1, $t7, k_f10
+    nop
+    sll   $t7, $t5, 2
+    addu  $t5, $t7, $t5
+    sll   $t5, $t5, 1               # retail: outside the city velocities are x10 (0x801999C8)
+k_f10:
     sh    $t5, 0x50($t1)
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)            # "moving this frame"
@@ -507,15 +516,23 @@ k_lx:
     mult  $t5, $t6
     mflo  $t5
     sra   $t5, $t5, 7
+    addiu $t7, $zero, 2
+    beq   $s1, $t7, k_s10
+    nop
+    sll   $t7, $t5, 2
+    addu  $t5, $t7, $t5
+    sll   $t5, $t5, 1               # retail: outside the city velocities are x10 (0x801999C8)
+k_s10:
     sh    $t5, 0x4E($t1)          # stick right = R1: positive
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)
 k_done:
     lw    $s0, 16($sp)
-    lw    $ra, 24($sp)
+    lw    $s1, 20($sp)
+    lw    $ra, 32($sp)
     nop
     jr    $ra
-    addiu $sp, $sp, 32
+    addiu $sp, $sp, 40
 """
 
 
