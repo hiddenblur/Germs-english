@@ -252,6 +252,45 @@ placement, none of which is settled yet.
   66,567 are still asm. The result differs from retail only in the 5 non-matching functions (55 words).
 - `psyqlib.parse_obj` now also returns `xrefs`, `sym_ids` and `patch_refs` (which symbols each patch uses).
 
-Next: split `.data/.sdata/.bss` by owner (libraries' own data from the `.LIB` objects first, then the globals
-the C files define), then link the C objects too so their data refs and intra-file calls are resolved by
-PSYLINK instead of copied from retail; turn the remaining asm into C.
+## Data split and the whole-image PSYLINK link (2026-10-26)
+
+`python -I tools/fulllink.py` links the whole EXE image (everything up to the start of bss) with the real
+`PSYLINK.EXE` and gets **0 words different from `SLPS_021.07`**. The input is the 303 Lib44 modules (cut from
+their `.LIB`s) plus glue objects holding the retail bytes of what is not a located module. The build is
+`build/link/` (gitignored); `full.lnk` is the link script, `full.map` the map.
+
+What it took (all measured, see the sources):
+- **Retail link layout.** One run of PSYLINK: `.rdata`, `.text`, `.ctors`, `.dtors`, `.data`, `.sdata` (all in
+  the `text` group), then `.sbss`, `.bss` (the `bss` group), each section the concatenation of the objects'
+  sections in link order. `.rdata` 0x80170000, `.text` 0x80173054 to 0x801D7328 (the retail `__textlen` is 0x642D4),
+  `.data` from 0x801D7328, `.sdata` from `gp` = 0x801DFC58, `.sbss` 0x801DFE50-0x801DFFE8, `.bss` to 0x801E7A10
+  (`SNMAIN`'s data holds `__bss` = 0x801DFFE8, `__bsslen` = 0x7A28, and refers to the start of the empty
+  `.ctors`/`.dtors` sections, so the script must declare them).
+- **Section bases from relocations** (`tools/datamap.py`). Every relocation that points into the module's own
+  section (`HI16/LO16`, `JMP26`, 32-bit words; tags 82, 84, 74, 16 of the LNK patch records) was resolved by
+  the linker to base+offset, so reading the retail word gives the base. This placed `.rdata` (26), `.data` (38),
+  `.sbss` (1) and `.bss` (19 sections) of the located modules, all in link order, no overlaps; initialized
+  sections were checked byte for byte. OBJT2 and OBJT3 have the same code; OBJT2's `.data` would have to sit in
+  bss, so the game has OBJT3 (`objmap.PREFER`).
+- **External names** (99, e.g. `main`, `_stacksize`, game functions the libraries call) get the address the
+  retail relocations resolve them to (`datamap.symbol_values`) as `name equ addr` lines in the script.
+- **Common symbols** (LNK op 48 `xbss`, ~12 KB: `_que`, `GsDRAWENV`, ...) are allocated by the linker in an
+  order that depends on every object of the link, so they cannot be left to it while the game objects are
+  missing. Each record is rewritten into a plain reference (op 14, same symbol id) and the symbol is an `equ`
+  at its retail address; the space is part of the bss glue.
+- **Alignment byte of a LNK section** (PSYLINK 2.82, measured with `tools/lnk.py` objects): 2 = no padding,
+  4 = 2 bytes, 8 = 4 bytes (what ASPSX writes), 1 and 16 = 256 bytes. Glue objects use 2.
+- `tools/lnk.py` writes LNK objects (sections of bytes or bss sizes); `psyqlib.parse_obj` now returns local
+  symbols, expression trees (`patch_exprs`) and the xbss records with their byte spans.
+
+`tools/gen_splat.py` now also splits `.rdata`, `.data` and `.sdata` into one piece per located module and per run
+of game data (`lib_<LIB>_<MODULE>_<section>`, `game_<section>_<addr>`); the bss stays one splat segment (its pieces
+would start past the end of the file), its per-module split is `fulllink.layout()`. `tools/lib_relink.py` is
+still the per-module check (303/303); `tools/fulllink.py` is the real link.
+
+**Where the game code is now:** still glue (retail bytes). To make the C count in this link, each function in
+`decomp/src` has to become its own object placed in its slot of the glue: split the compiled C object per
+function (text slice, its patches with new offsets, an `xdef`), add an `equ` for every data symbol the C
+declares (their addresses come from the retail words like the library externals), and cut the glue text at the
+function boundaries. Then the 5 non-matching functions show up as link diffs, and the next C function replaces
+more glue.

@@ -19,6 +19,9 @@ ROOT = Path(__file__).resolve().parent.parent
 EXE = ROOT / "extracted" / "files" / "SLPS_021.07"
 LIBDIR = ROOT / "tools" / "vendor" / "psyq44" / "LIB"
 MIN_WORDS = 4
+# Same code, different data: the retail relocations decide (tools/datamap.py). OBJT2 would need a .data
+# section at 0x801E2DB0, inside bss, so the game has OBJT3, which refers to that symbol externally.
+PREFER = {"OBJT3"}
 
 
 def module_texts(lib):
@@ -55,7 +58,7 @@ def main():
     found, ambiguous = locate(libs, EXE.read_bytes())
     # Identical code in two modules (LIBC/LIBC2 QSORT, LIBGS GS_132/LIBHMD VWUNIT, ...) or a stub that sits
     # inside a bigger module cannot be told apart by text: keep the first/biggest, list the others as `also`.
-    found.sort(key=lambda f: (f[0], -f[1], f[2] != "LIBC2.LIB"))
+    found.sort(key=lambda f: (f[0], -f[1], f[3] not in PREFER, f[2] != "LIBC2.LIB"))
     kept = []
     for a, s, lib, mod in found:
         if kept and a < kept[-1][0] + kept[-1][1]:

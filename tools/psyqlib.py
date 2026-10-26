@@ -32,9 +32,25 @@ def expr(d, p):
     raise ValueError('expr tag 0x%02X at %d' % (t, p - 1))
 
 
+def expr_tree(d, p):
+    """Parse a patch expression into a tree: ('const', v), ('sym', id), ('sec', tag, id) or (tag, left, right)."""
+    t = d[p]
+    p += 1
+    if t == 0x00:
+        return p + 4, ('const', struct.unpack_from('<i', d, p)[0])
+    if t == 0x02:
+        return p + 2, ('sym', struct.unpack_from('<H', d, p)[0])
+    if t in (0x04, 0x0C, 0x16, 0x14):
+        return p + 2, ('sec', t, struct.unpack_from('<H', d, p)[0])
+    p, a = expr_tree(d, p)
+    p, b = expr_tree(d, p)
+    return p, (t, a, b)
+
+
 def parse_obj(d, p):
     """Parse one LNK object starting at its 'LNK\x02' magic. Returns dict."""
     assert d[p:p + 3] == b'LNK'
+    start = p
     p += 4
     sections = {}                       # id -> [name, bytearray]
     cur = None
@@ -44,6 +60,9 @@ def parse_obj(d, p):
     xrefs = {}                          # symbol id -> external name
     sym_ids = {}                        # symbol id -> xdef name
     funcs = []                          # (section, offset, name)
+    local_syms = []                     # (section id, offset, name)
+    xbss = []                           # (opcode, symbol id, section id, size, name)
+    patch_exprs = []                    # (section id, offset, tag, expression tree)
     xdefs = {}
     while True:
         op = d[p]
@@ -72,6 +91,7 @@ def parse_obj(d, p):
             tag = d[p]
             off = struct.unpack_from('<H', d, p + 1)[0]
             q, refs = expr(d, p + 3)
+            patch_exprs.append((cur, chunk + off, tag, expr_tree(d, p + 3)[1]))
             patches.append((cur, chunk + off, tag))
             patch_refs.append((cur, chunk + off, refs))
             p = q
@@ -87,9 +107,10 @@ def parse_obj(d, p):
             sid, grp = struct.unpack_from('<HH', d, p)
             name, p = pstr(d, p + 5)
             sections[sid] = [name, bytearray(), 0]
-        elif op == 18:                  # local symbol
-            p += 6
-            _, p = pstr(d, p)
+        elif op == 18:                  # local symbol: section id, offset, name
+            sec, off = struct.unpack_from('<HI', d, p)
+            name, p = pstr(d, p + 6)
+            local_syms.append((sec, off, name))
         elif op == 20:                  # group
             p += 3
             _, p = pstr(d, p)
@@ -97,9 +118,11 @@ def parse_obj(d, p):
             p += 3
         elif op == 24:
             p += 3
-        elif op in (26, 48):            # xbss
-            p += 8
-            _, p = pstr(d, p)
+        elif op in (26, 48):            # xbss: uninitialized symbol the linker allocates
+            sid, sec, size = struct.unpack_from('<HHI', d, p)
+            at = p - 1 - start
+            name, p = pstr(d, p + 8)
+            xbss.append((op, sid, sec, size, name, at, p - start))      # the record is obj[at:end]
         elif op == 28:                  # source file (ASPSX output): id, name
             p += 2
             _, p = pstr(d, p)
@@ -138,7 +161,7 @@ def parse_obj(d, p):
         else:
             raise ValueError('opcode %d at %d' % (op, p - 1))
     return dict(sections=sections, patches=patches, funcs=funcs, xdefs=xdefs, end=p,
-                patch_refs=patch_refs, xrefs=xrefs, sym_ids=sym_ids)
+                patch_refs=patch_refs, xrefs=xrefs, sym_ids=sym_ids, local_syms=local_syms, patch_exprs=patch_exprs, xbss=xbss)
 
 
 def modules(path):

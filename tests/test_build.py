@@ -31,6 +31,26 @@ class BuildExe(unittest.TestCase):
         bad = [(m, st) for _, _, _, m, st, _, _ in lib_relink.relinked_modules() if st != "OK"]
         self.assertEqual(bad, [])
 
+    @unittest.skipUnless((ROOT / "tools" / "vendor" / "psyq44" / "LIB").exists() and (ROOT / "decomp" / "objects.txt").exists(),
+                         "needs the unpacked Lib44 (tools/vendor/psyq44)")
+    def test_full_psylink_link_equals_retail(self):
+        import subprocess
+        out = ROOT / "build" / "link"
+        r = subprocess.run([sys.executable, "-I", str(ROOT / "tools" / "fulllink.py"), "--out", str(out)],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("0 words differ", r.stdout)
+
+    def test_lnk_writer_roundtrip(self):
+        import lnk
+        import psyqlib
+        blob = lnk.write_object({".text": bytes(range(16)) * 5000, ".data": b"abcd", ".bss": 32})
+        o = psyqlib.parse_obj(blob, 0)
+        by_name = {s[0]: s for s in o["sections"].values()}
+        self.assertEqual(bytes(by_name[".text"][1]), bytes(range(16)) * 5000)
+        self.assertEqual(bytes(by_name[".data"][1]), b"abcd")
+        self.assertEqual(by_name[".bss"][2], 32)
+
     def test_elf_for_objdiff(self):
         import objdiff_objs
         base, target, names = objdiff_objs.convert(ROOT / "decomp" / "src" / "leaf4.c")
