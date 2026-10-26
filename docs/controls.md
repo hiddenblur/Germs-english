@@ -56,3 +56,27 @@ The position update that consumes `+0x4E`/`+0x50` and the yaw has not been found
   do not describe function hooks, so the port should own this function.
 - Not checked: driving or vehicle sections (this game may not have any), how the camera reads yaw,
   and whether any other screen uses these fields.
+
+## Analog stick prototype (2026-10-25, tested in DuckStation)
+
+`tools/patch_exe.py` (`STICK_WRAPPER`): the call to `0x80199548` at `0x801A8880` goes through a wrapper
+that runs it and then reads the sticks from the BIOS pad buffer `0x80007570` (+4 RX, +5 RY, +6 LX,
++7 LY, 0x80 = centre), which a pad in analog mode (ID byte `0x73`) fills. The wrapper lives in
+`GsSetFlatLight` (`0x801B1F90`-`0x801B2500`, never called: an execute breakpoint saw 0 hits).
+
+- **Right stick X and left stick X turn** (`+0x6E`, `stick * dt >> 5`, full deflection about 2.8x the
+  d-pad rate). Confirmed: the compass went from E to S.
+- **Left stick Y moves** (`+0x50`, `-stick * dt * 11 >> 7`, so full push = the run speed 11 * dt;
+  up is forward, down is back). Confirmed: the view moved and the "Delicatessen" prompt appeared.
+- Digital pads (ID `0x41`) and `[+0x46] != 0` are untouched. In DuckStation the Analog button turns
+  analog mode on (it resets on a save state load); on a real pad the analog button does the same.
+- **Pitch (`+0x6C`) and sideways velocity (`+0x4E`) do nothing in free roam.** The real d-pad Up and R1
+  also change nothing on screen, and nothing reads `+0x6C` (read watchpoint, no hits), so the
+  patch does not drive them. Whatever "Up/Down look" does must be elsewhere (maybe with `+0x46 != 0`,
+  or in a different mode); not found yet.
+- **Yaw is not 0..0xFFF.** It kept counting past `0x1400` with no wrap. The world code reads it as a
+  signed halfword (`lh 0x6E`) and passes it through `0x8018C0A0` (which returns 0-7 for some uses),
+  so the real unit and wrap are still open. Collision/movement reader: `0x8017A29C`.
+- Unit test: `tests/test_sticks.py` (unicorn; the retail movement function is stubbed).
+- Not done: mouse input (needs the recomp: DuckStation has no mouse path to the BIOS buffer for
+  this game), a smooth/accelerated turn curve, and sensitivity options.

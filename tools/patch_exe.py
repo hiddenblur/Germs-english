@@ -363,6 +363,91 @@ wd_upload:
     nop
 """
 
+# Analog sticks (prototype). The game only reads the digital buttons, but an analog pad in analog
+# mode (ID 0x73) also leaves the sticks in the BIOS pad buffer: 0x80007570 +4 RX, +5 RY, +6 LX,
+# +7 LY (0x80 = centre). The movement function 0x80199548 (docs/controls.md) is called from
+# 0x801A8880; that call goes through this wrapper, which runs it and then adds the sticks on top:
+#   right stick X + left stick X -> yaw (+0x6E), as the Left/Right buttons do
+#   left stick Y                 -> forward velocity (+0x50), as Triangle/Cross do
+# Tested in DuckStation: both work. Up/Down look (+0x6C) and the sideways velocity (+0x4E) are
+# not used by the game in free roam (the pad buttons change nothing on screen either), so the
+# sticks don't drive them. Digital pads (ID 0x41) and the look-offset mode (+0x46 != 0) are left
+# alone. The code replaces GsSetFlatLight (0x801B1F90-0x801B2500), which nothing in the game calls.
+MOVE = 0x80199548
+MOVE_CALL = 0x801A8880
+STICK_BLOCK, STICK_BLOCK_END = 0x801B1F90, 0x801B2500
+STICK_DEADZONE = 24             # raw stick units around the centre that are ignored
+STICK_YAW_SHIFT = 5             # yaw += stick * dt >> 5 (the pad adds dt per frame)
+STICK_RUN = 11                  # forward velocity at full deflection = 11 * dt (pad: walk 4, run 11)
+
+
+def stick(axis, label):
+    """Leave the centred raw stick byte `axis` of the pad buffer in $t4 (signed), skipping to
+    `label` inside the dead zone."""
+    return f"""
+    lbu   $t4, {axis}($t0)
+    nop
+    addiu $t4, $t4, -0x80
+    addiu $t5, $t4, {STICK_DEADZONE}
+    sltiu $t5, $t5, {2 * STICK_DEADZONE + 1}
+    bne   $t5, $zero, {label}
+    nop"""
+
+
+STICK_WRAPPER = f"""
+    addiu $sp, $sp, -24
+    sw    $ra, 16($sp)
+    jal   {MOVE:#x}
+    nop
+    lui   $t0, 0x8000
+    ori   $t0, $t0, 0x7570          # BIOS pad buffer, port 1
+    lbu   $t1, 1($t0)
+    addiu $t2, $zero, 0x73
+    bne   $t1, $t2, k_done          # not in analog mode
+    lui   $t1, 0x801E
+    ori   $t1, $t1, 0x0620          # player struct
+    lhu   $t2, 0x46($t1)
+    nop
+    bne   $t2, $zero, k_done        # look-offset mode
+    lui   $t3, 0x801E
+    lw    $t3, 0x6DB4($t3)          # time step
+    nop
+    or    $t7, $zero, $zero         # yaw input: right stick X + left stick X
+{stick(4, "k_lx")}
+    addu  $t7, $t7, $t4
+k_lx:
+{stick(6, "k_yaw")}
+    addu  $t7, $t7, $t4
+k_yaw:
+    beq   $t7, $zero, k_ly
+    nop
+    mult  $t7, $t3
+    mflo  $t5
+    sra   $t5, $t5, {STICK_YAW_SHIFT}
+    lhu   $t6, 0x6E($t1)
+    nop
+    addu  $t6, $t6, $t5             # stick right = Right button: yaw up
+    sh    $t6, 0x6E($t1)
+k_ly:
+{stick(7, "k_done")}
+    subu  $t4, $zero, $t4           # stick up = forward = positive
+    mult  $t4, $t3
+    mflo  $t5
+    addiu $t6, $zero, {STICK_RUN}
+    mult  $t5, $t6
+    mflo  $t5
+    sra   $t5, $t5, 7
+    sh    $t5, 0x50($t1)
+    addiu $t6, $zero, 1
+    sh    $t6, 0x3C($t1)            # "moving this frame"
+k_done:
+    lw    $ra, 16($sp)
+    nop
+    jr    $ra
+    addiu $sp, $sp, 24
+"""
+
+
 # (start, end, expected retail first instruction, new code)
 PATCHES = [
     # narration typewriter
@@ -386,6 +471,9 @@ PATCHES = [
     (0x80183044, 0x80183048, "addu $v0, $s5, $s2", "addiu $v0, $s5, 1"),    # next line (retail reused s2 = 1)
     # weapon name renderer
     (0x8018C8E4, 0x8018CB50, "addu $s1, $v0, $zero", WEAPON_DRAW),
+    # analog sticks: wrapper in the dead GsSetFlatLight, reached from the movement call site
+    (STICK_BLOCK, STICK_BLOCK_END, "addiu $sp, $sp, -144", STICK_WRAPPER),
+    (MOVE_CALL, MOVE_CALL + 4, f"jal {MOVE:#x}", f"jal {STICK_BLOCK:#x}"),
 ] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
 
 
