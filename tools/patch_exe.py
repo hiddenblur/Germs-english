@@ -366,19 +366,22 @@ wd_upload:
 # Analog sticks (prototype). The game only reads the digital buttons, but an analog pad in analog
 # mode (ID 0x73) also leaves the sticks in the BIOS pad buffer: 0x80007570 +4 RX, +5 RY, +6 LX,
 # +7 LY (0x80 = centre). The movement function 0x80199548 (docs/controls.md) is called from
-# 0x801A8880; that call goes through this wrapper, which runs it and then adds the sticks on top:
-#   right stick X + left stick X -> yaw (+0x6E), as the Left/Right buttons do
-#   left stick Y                 -> forward velocity (+0x50), as Triangle/Cross do
-# Tested in DuckStation: both work. Up/Down look (+0x6C) and the sideways velocity (+0x4E) are
-# not used by the game in free roam (the pad buttons change nothing on screen either), so the
-# sticks don't drive them. Digital pads (ID 0x41) and the look-offset mode (+0x46 != 0) are left
-# alone. The code replaces GsSetFlatLight (0x801B1F90-0x801B2500), which nothing in the game calls.
+# 0x801A8880; that call goes through this wrapper, which runs it and then adds the sticks on top,
+# standard dual-stick layout:
+#   right stick X -> yaw (+0x6E)          like the Left/Right buttons
+#   right stick Y -> pitch (+0x6C)        like Up/Down, kept inside the game's range -25..65
+#   left stick Y  -> forward (+0x50)      like Triangle/Cross
+#   left stick X  -> strafe (+0x4E)       like L1/R1
+# Digital pads (ID 0x41) and the look-offset mode (+0x46 != 0) are left alone. The code replaces
+# GsSetFlatLight (0x801B1F90-0x801B2500), which nothing in the game calls.
 MOVE = 0x80199548
 MOVE_CALL = 0x801A8880
 STICK_BLOCK, STICK_BLOCK_END = 0x801B1F90, 0x801B2500
 STICK_DEADZONE = 24             # raw stick units around the centre that are ignored
 STICK_YAW_SHIFT = 5             # yaw += stick * dt >> 5 (the pad adds dt per frame)
-STICK_RUN = 11                  # forward velocity at full deflection = 11 * dt (pad: walk 4, run 11)
+STICK_PITCH_SHIFT = 6
+PITCH_MIN, PITCH_MAX = -25, 65  # where the Up/Down buttons stop
+STICK_RUN, STICK_STRAFE = 11, 6  # velocity at full deflection = n * dt (pad: walk 4, run 11, strafe 6)
 
 
 def stick(axis, label):
@@ -412,24 +415,35 @@ STICK_WRAPPER = f"""
     lui   $t3, 0x801E
     lw    $t3, 0x6DB4($t3)          # time step
     nop
-    or    $t7, $zero, $zero         # yaw input: right stick X + left stick X
-{stick(4, "k_lx")}
-    addu  $t7, $t7, $t4
-k_lx:
-{stick(6, "k_yaw")}
-    addu  $t7, $t7, $t4
-k_yaw:
-    beq   $t7, $zero, k_ly
-    nop
-    mult  $t7, $t3
+{stick(4, "k_ry")}
+    mult  $t4, $t3
     mflo  $t5
     sra   $t5, $t5, {STICK_YAW_SHIFT}
     lhu   $t6, 0x6E($t1)
     nop
     addu  $t6, $t6, $t5             # stick right = Right button: yaw up
     sh    $t6, 0x6E($t1)
+k_ry:
+{stick(5, "k_ly")}
+    mult  $t4, $t3
+    mflo  $t5
+    sra   $t5, $t5, {STICK_PITCH_SHIFT}
+    lh    $t6, 0x6C($t1)
+    nop
+    subu  $t6, $t6, $t5             # stick up = Up button: pitch up
+    slti  $t7, $t6, {PITCH_MAX + 1}
+    bne   $t7, $zero, k_pmax
+    nop
+    addiu $t6, $zero, {PITCH_MAX}
+k_pmax:
+    slti  $t7, $t6, {PITCH_MIN}
+    beq   $t7, $zero, k_pmin
+    nop
+    addiu $t6, $zero, {PITCH_MIN}
+k_pmin:
+    sh    $t6, 0x6C($t1)
 k_ly:
-{stick(7, "k_done")}
+{stick(7, "k_lx")}
     subu  $t4, $zero, $t4           # stick up = forward = positive
     mult  $t4, $t3
     mflo  $t5
@@ -440,6 +454,17 @@ k_ly:
     sh    $t5, 0x50($t1)
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)            # "moving this frame"
+k_lx:
+{stick(6, "k_done")}
+    mult  $t4, $t3
+    mflo  $t5
+    addiu $t6, $zero, {STICK_STRAFE}
+    mult  $t5, $t6
+    mflo  $t5
+    sra   $t5, $t5, 7
+    sh    $t5, 0x4E($t1)          # stick right = R1: positive
+    addiu $t6, $zero, 1
+    sh    $t6, 0x3C($t1)
 k_done:
     lw    $ra, 16($sp)
     nop

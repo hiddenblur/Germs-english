@@ -57,26 +57,36 @@ The position update that consumes `+0x4E`/`+0x50` and the yaw has not been found
 - Not checked: driving or vehicle sections (this game may not have any), how the camera reads yaw,
   and whether any other screen uses these fields.
 
-## Analog stick prototype (2026-10-25, tested in DuckStation)
+## Analog stick prototype (2026-10-25)
 
 `tools/patch_exe.py` (`STICK_WRAPPER`): the call to `0x80199548` at `0x801A8880` goes through a wrapper
 that runs it and then reads the sticks from the BIOS pad buffer `0x80007570` (+4 RX, +5 RY, +6 LX,
 +7 LY, 0x80 = centre), which a pad in analog mode (ID byte `0x73`) fills. The wrapper lives in
 `GsSetFlatLight` (`0x801B1F90`-`0x801B2500`, never called: an execute breakpoint saw 0 hits).
 
-- **Right stick X and left stick X turn** (`+0x6E`, `stick * dt >> 5`, full deflection about 2.8x the
-  d-pad rate). Confirmed: the compass went from E to S.
-- **Left stick Y moves** (`+0x50`, `-stick * dt * 11 >> 7`, so full push = the run speed 11 * dt;
-  up is forward, down is back). Confirmed: the view moved and the "Delicatessen" prompt appeared.
-- Digital pads (ID `0x41`) and `[+0x46] != 0` are untouched. In DuckStation the Analog button turns
-  analog mode on (it resets on a save state load); on a real pad the analog button does the same.
-- **Pitch (`+0x6C`) and sideways velocity (`+0x4E`) do nothing in free roam.** The real d-pad Up and R1
-  also change nothing on screen, and nothing reads `+0x6C` (read watchpoint, no hits), so the
-  patch does not drive them. Whatever "Up/Down look" does must be elsewhere (maybe with `+0x46 != 0`,
-  or in a different mode); not found yet.
-- **Yaw is not 0..0xFFF.** It kept counting past `0x1400` with no wrap. The world code reads it as a
-  signed halfword (`lh 0x6E`) and passes it through `0x8018C0A0` (which returns 0-7 for some uses),
-  so the real unit and wrap are still open. Collision/movement reader: `0x8017A29C`.
-- Unit test: `tests/test_sticks.py` (unicorn; the retail movement function is stubbed).
-- Not done: mouse input (needs the recomp: DuckStation has no mouse path to the BIOS buffer for
-  this game), a smooth/accelerated turn curve, and sensitivity options.
+| Stick | Field | Like the button | Status |
+|---|---|---|---|
+| right X | yaw `+0x6E`, `stick * dt >> 5` | Left/Right | confirmed live (compass E to S) |
+| left Y | forward `+0x50`, `-stick * dt * 11 >> 7` (full = run speed) | Triangle/Cross | confirmed live (view moved) |
+| right Y | pitch `+0x6C`, `stick * dt >> 6`, clamped -25..65 | Up/Down | unit test only |
+| left X | strafe `+0x4E`, `stick * dt * 6 >> 7` | L1/R1 | unit test only |
+
+Digital pads (ID `0x41`) and `[+0x46] != 0` are untouched. The Analog button turns analog mode on
+(DuckStation resets it on a state load).
+
+Original controls (confirmed by the user): d-pad rotates the view (Left/Right turn, Up/Down look
+up/down), Triangle/Cross forward/back, L1/R1 strafe. Measured with the real buttons: Up stops at
+pitch +65 and Down at -25 (clamped inside the game), and R1 strafes the view sideways.
+
+An earlier note here said pitch and strafe do nothing. That was wrong: the character was pushed
+against a wall or in a prompt state, where the pad buttons did nothing either.
+
+Yaw is not 0..0xFFF: it kept counting past `0x1400` with no wrap. The world code reads it as a
+signed halfword (`lh 0x6E`) and passes it through `0x8018C0A0`, so the real unit is still open.
+Collision/movement reader: `0x8017A29C`.
+
+DuckStation's `set_analog` is overridden by a connected physical pad (the buffer showed 0x7B-0x82
+noise), so scripted stick tests need that pad unplugged or idle.
+
+Unit test: `tests/test_sticks.py` (unicorn; the retail movement function is stubbed).
+Not done: mouse input (needs the recomp), a smoother turn curve, sensitivity options.
