@@ -14,11 +14,14 @@ HAVE = ((ROOT / "psyq" / "bin" / "ASPSX.EXE").exists() and (ROOT / "tools" / "ve
         and (ROOT / "extracted" / "files" / "SLPS_021.07").exists())
 MATCHING = {
     "decomp/src/angle.c": ["norm_angle", "angle_quadrant"],
+    "decomp/src/batch10.c": ["fn_801A6AC4", "fn_8017D0E0", "fn_8019A5D4"],
     "decomp/src/batch3.c": ["fn_80199C68", "fn_80184160", "fn_80199CC0", "fn_801AC4A8", "fn_8017E544"],
     "decomp/src/batch4.c": ["fn_801AC500", "fn_80184100", "fn_801863B4", "fn_801A8F2C", "fn_8018655C"],
     "decomp/src/batch5.c": ["fn_80186718", "fn_801A39F0", "fn_801AC214", "fn_80186414", "fn_801A3C58", "fn_801841C4"],
     "decomp/src/batch6.c": ["fn_80189054", "fn_801890C4", "fn_801A68F0", "fn_801762F4"],
     "decomp/src/batch7.c": ["fn_8018677C", "fn_801865C0", "fn_801A5DA0", "fn_801A8F8C", "fn_801AC0E4"],
+    "decomp/src/batch8.c": ["fn_80189970", "fn_80189928", "fn_801867E8", "fn_8018BD8C", "fn_801A7AFC"],
+    "decomp/src/batch9.c": ["fn_801898C0", "fn_80184094", "fn_801A8FF8", "fn_80185548", "fn_801A3970", "fn_801A252C", "fn_80186884", "fn_8018AABC", "fn_801A3BCC"],
     "decomp/src/calls1.c": ["fn_8017D3F0", "fn_8018BD60", "fn_801A8EFC", "fn_801A69E0", "fn_80176734"],
     "decomp/src/calls2.c": ["fn_801854B8", "fn_80192F20", "fn_801A20A8", "fn_801A4370", "fn_801A533C"],
     "decomp/src/leaf1.c": ["fn_8017D564", "fn_8018D1F0", "fn_8019A6A4", "fn_801A216C", "fn_801A3DBC", "fn_801AC9B4", "fn_80186230", "fn_80186258", "fn_80186280", "fn_801AC55C", "fn_8019A664", "fn_80199FA0", "fn_8017E504"],

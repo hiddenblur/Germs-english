@@ -54,7 +54,8 @@ class BuildExe(unittest.TestCase):
         self.assertEqual(differing, NOT_C_YET, r.stdout)
         if not NOT_C_YET:
             self.assertIn("0 words differ", r.stdout)
-        self.assertIn("86 C functions", r.stdout)
+        listed = [l for l in (ROOT / "decomp" / "functions.txt").read_text().splitlines() if l.strip() and not l.startswith("#")]
+        self.assertIn(f"{len(listed)} C functions", r.stdout)
 
     def test_lnk_writer_roundtrip(self):
         import lnk
