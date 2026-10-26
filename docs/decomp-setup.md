@@ -337,3 +337,35 @@ with our C equals the retail image (0 words differ)**; `tests/test_build.py` and
   own register (`$t0`); it comes out of `sa = 1; s2 = 2; s6 = 0; s4 = 1; pc = sym; ...` (exhaustive over
   the order of the first five stores; 4 of 120 orders match). The earlier random sampling of all 10 stores
   (30,000 of 3.6M) had missed it.
+## More C: 114 functions (2026-10-27)
+
+`decomp/src/batch8.c`-`batch12.c` add 28 functions (all byte-identical, all in the PSYLINK link; 114 pinned in
+`tests/test_cc.py`, 2,532 of 102,583 code words are C). Candidates come from the splat asm
+(`nonmatching func_XXXXXXXX, 0xSIZE` lines in `decomp/asm/game_*.s`, game range below `0x801AC9D0`), smallest first.
+Near misses are parked in `decomp/wip/near_miss.c` (not in `functions.txt`, so not linked) with a note on what differs:
+`fn_801A20CC`/`fn_801A211C`, `fn_801A3B5C`, `fn_801A6968`, `fn_80187560`, `fn_8017D574`, `fn_801AC88C`,
+`fn_801855C8`/`fn_801A44B8` (same shape as `fn_8018E56C`), `fn_801A5C34`, `fn_80194F08`.
+`fn_801AC91C` and `fn_80199E1C` were looked at and not written yet.
+
+Rules that matched stubborn functions (add to the ones above):
+- **K&R `short`/`unsigned short` parameters are copied at entry** (`move v1,a1`, `move s2,s1`, or an `andi` for
+  `unsigned short`); the original argument register stays alive for other uses. `fn_8018A968(a, b) short a, b`,
+  `fn_8018D200(a, b) unsigned short a; int b`. A plain local copy (`int c = a`) is propagated away instead.
+- **A value that is also an argument of a call lives in an argument register** (`fn_801AC214`); passing the same
+  value (or an extra one) to the callee reproduces it: `fn_80189928` calls `gp280(p, e)`.
+- **Loops without loop optimization.** A `while` that the retail code does not rotate, or a loop whose limit
+  (`addiu v0,s1,0xa0`) is recomputed every pass and whose pointer is not strength-reduced, is written with a
+  backward `goto` (no loop notes): `fn_80185548`, `fn_801A7BA4`, `fn_801A252C`, `angle_quadrant`. In
+  `fn_801A252C` the addresses are also `int`s (signed `slt`). A `for (;;)` with `break` keeps the loop optimizer.
+- **A store placed before a call ends up in its delay slot**: if the retail delay slot holds a store, the store is
+  before the call in the source (`fn_801A3BCC`, `fn_8018AABC`).
+- **In-place pointer add**: `s += s[1]; d = s[4]` (`fn_8018A8CC`) gives `addu v1,v1,v0`; `s[s[1] + 4]` does not.
+- **Base registers**: `H *q = &g368b;` (a local pointer to the extern) gives `lui/addiu` once and offsets from
+  it (`fn_8018BD8C`, `fn_80186680`); direct member access of an extern struct gives `lui $at` per store.
+  `e0s[0x1040 / 2] = a;` on the `0x801E0000` array gives `lui v0; sh a,0x1040(v0)` (`fn_8018AABC`).
+- `/`, `%` by constants and `short` division are reproduced by writing the same expression
+  (`(s[4] << 4) / 100`, `((v * 3 << 18) / 360) >> 14`).
+- Cheap way to look at a diff: put the candidate after the file's header in a scratch `.c`, add its name to
+  `decomp/functions.txt`, and run `python -I tools/cc_check.py <file> --show`; `tools/variants.py` runs many
+  candidates (see its docstring); parking is just moving the function into `decomp/wip/` and removing it from
+  `functions.txt`.
