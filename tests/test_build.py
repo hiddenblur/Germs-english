@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 HAVE = ((ROOT / "psyq" / "bin" / "ASPSX.EXE").exists() and (ROOT / "tools" / "vendor" / "oldgcc" / "bin" / "cc1-2.8.1.exe").exists()
         and (ROOT / "extracted" / "files" / "SLPS_021.07").exists())
-NOT_C_YET = {"angle_quadrant", "fn_801AC4A8", "fn_801AC214", "fn_801A3C58", "fn_8018C50C"}
+NOT_C_YET = set()          # functions with C that do not match yet (all 86 match)
 
 
 @unittest.skipUnless(HAVE, "needs psyq/, the 2.8.1 build and extracted/")
@@ -44,7 +44,7 @@ class BuildExe(unittest.TestCase):
     @unittest.skipUnless((ROOT / "tools" / "vendor" / "psyq44" / "LIB").exists() and (ROOT / "decomp" / "objects.txt").exists(),
                          "needs the unpacked Lib44 (tools/vendor/psyq44)")
     def test_c_functions_in_the_link(self):
-        """With our compiled C linked in, only the functions that do not match yet differ from retail."""
+        """With our compiled C linked in the image equals retail, except for functions in NOT_C_YET."""
         import re
         import subprocess
         r = subprocess.run([sys.executable, "-I", str(ROOT / "tools" / "fulllink.py"), "--out", str(ROOT / "build" / "link-c")],
@@ -52,6 +52,8 @@ class BuildExe(unittest.TestCase):
         self.assertIn("0 error(s)", r.stdout, r.stdout + r.stderr)
         differing = set(re.findall(r"^  (\w+): \d+ words differ", r.stdout, re.M))
         self.assertEqual(differing, NOT_C_YET, r.stdout)
+        if not NOT_C_YET:
+            self.assertIn("0 words differ", r.stdout)
         self.assertIn("86 C functions", r.stdout)
 
     def test_lnk_writer_roundtrip(self):

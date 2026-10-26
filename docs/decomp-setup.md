@@ -313,3 +313,27 @@ non-matching functions** (`fn_8018C50C` 10 words, `angle_quadrant` 16, `fn_801A3
 Next: more C (every new function in `decomp/src` + `decomp/functions.txt` shows up here), the 5 diffs, game
 data as C objects (so the data symbols come from the link, not from the retail words), and replacing the rest of
 the glue (66 k code words) by compiled functions, starting with the ones next to library code.
+## All 86 functions match (2026-10-26)
+
+The five functions that did not match now do: **86 of 86 byte-identical with gcc 2.8.1, and the PSYLINK link
+with our C equals the retail image (0 words differ)**; `tests/test_build.py` and `tests/test_cc.py` pin it
+(`NOT_C_YET` is empty). What each one needed, as rules for the remaining functions:
+
+- **A value that is passed on lives in an argument register.** `fn_801AC214`, `fn_801AC4A8`: the pointer read
+  from `0x801E076C` sat in `$a1`/`$a0` in the retail code because it is also an argument of the callees
+  (`fn_801A923C(x, q)`, `fn_801AA360(q)`); the callees take it (our externs are unprototyped, so extra
+  arguments cost nothing). `fn_801A3C58`: the `lh $a1, 2($s0)` before the test is `q[1]` passed to the first call,
+  `fn_801C1018(q[0], q[1])`. When the retail code loads something into `$aN` early for no visible reason, look
+  for a call that takes it.
+- **A global read where it is used** (`e0s[0x6DB8 / 2]` twice in the second call, not a local before the first
+  call) keeps the retail order of the loads and avoids a callee-saved register for it.
+- **`angle_quadrant`: a backward `goto`, not a loop.** The retail delay slot of the wrap branch is filled from
+  the fall-through; reorg.c `mostly_true_jump` takes the target thread for a branch to a label that follows a
+  `NOTE_INSN_LOOP_BEG` (every `do/while`, `for`), so the code only comes out as retail when gcc does not see a
+  loop. Also `int v = (short)a;` (an int, so the range tests are signed, no `andi` masks). `norm_angle`
+  (a real loop in the retail code) stays a `do/while`. Look for this whenever a loop's last branch has the
+  "wrong" delay slot.
+- **`fn_8018C50C`: the first statement decides register sharing.** The retail code keeps the constant `1` in its
+  own register (`$t0`); it comes out of `sa = 1; s2 = 2; s6 = 0; s4 = 1; pc = sym; ...` (exhaustive over
+  the order of the first five stores; 4 of 120 orders match). The earlier random sampling of all 10 stores
+  (30,000 of 3.6M) had missed it.
