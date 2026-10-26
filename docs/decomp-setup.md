@@ -167,3 +167,36 @@ Still not matching (all with 2.8.1): `angle_quadrant`, `fn_801A3D74`, `fn_801A06
 `fn_80186838`, and the four table lookups in `lookup.c` (`fn_801767D4`, `fn_80176890`, `fn_80188FEC`,
 `fn_801891A4`: retail copies the loop count and id into `$a0`/`$a3` before the loop). `set_hi`
 (`0x8018BAE0`) was dropped. Next: more functions, then splat per-object segments and a link step.
+
+## Batch 3 (2026-10-26): 86 functions, 81 byte-identical with gcc 2.8.1
+
+`python -I tools/decomp_status.py` re-runs every file and rewrites `decomp/flags.txt` and the pinned
+list in `tests/test_cc.py`. Status: **81 byte-identical**, 2 identical except registers
+(`fn_801AC214`, `fn_801AC4A8`: the pointer read from `0x801E076C` is in `$v0`/`$v1` here, `$a1`/`$a0` in
+the retail code), 3 not matching (`fn_8018C50C`, `angle_quadrant`, `fn_801A3C58`). Of the nine that
+differed last time, seven now match: `fn_801A3D74`, `fn_80186838`, the four table lookups, and
+`fn_801A0690` (only with `-mno-split-addresses`, see `special.c`; probably a source-shape difference).
+
+`tools/variants.py` is a parallel search harness: build a dict of candidate sources, it compiles each
+(about 20 per second per thread) and reports exact and registers-only hits. Most stubborn functions
+fell to it. What it found, as rules for writing C that gcc 2.8.1 turns into the retail code:
+
+- **K&R `short` parameters** (`f(id) short id;`) make the compiler copy the argument at entry, which is
+  what the retail code does. Passing `int` and casting in the body gives different registers.
+- **A loop bound read from memory in the condition** (`for (i = 0; i < g->w[9]; i++)`) is hoisted into a
+  fresh register, giving the `move $a0, $a2` the retail loops have. A local `int n = ...` is not.
+- **Tables inside a bigger struct** (`extern struct { char pad[0x204]; struct E e[4]; } g;` then
+  `g.e[i]`) keep the base register and the large offsets apart; a `char *` plus offset gets folded.
+- **Arrays in a struct for pointer tables** (`struct T { int a[2]; }`), and **declaration order** decides
+  which of two pointers gets the lower register (`struct G *g` before `int c = p[3]`).
+- **Shared constants:** `int m1 = -1;` used for two stores keeps one register, as in `fn_80184408`.
+- **Shorts in locals** (`short a = p[0x12], b = p[0x13]; int m = a < b ? b : a;`) for `fn_801A3D74`.
+- **An extern symbol array for a fixed global** (`extern unsigned short e0u[]; e0u[0x6DB4 / 2]`) matches
+  where a constant address (`*(unsigned short *)0x801E6DB4`) does not, and the reverse in other places:
+  try both.
+- `-mno-split-addresses` flips only `fn_801A0690`; it makes 22 other functions fail. Not a global setting.
+
+Brute-force notes: 30,000 random statement orders of `fn_8018C50C` produced no exact or registers-only
+hit, so its difference is structural (the retail hoists the constant `1` into its own register before the
+fifth argument load). `angle_quadrant` is identical but for one branch target (the loop delay slot is filled
+from the target instead of the fall-through).

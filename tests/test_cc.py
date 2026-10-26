@@ -18,6 +18,7 @@ MATCHING = {
     "decomp/src/batch4.c": ["fn_801AC500", "fn_80184100", "fn_801863B4", "fn_801A8F2C", "fn_8018655C"],
     "decomp/src/batch5.c": ["fn_80186718", "fn_801A39F0", "fn_80186414", "fn_801841C4"],
     "decomp/src/batch6.c": ["fn_80189054", "fn_801890C4", "fn_801A68F0", "fn_801762F4"],
+    "decomp/src/batch7.c": ["fn_8018677C", "fn_801865C0", "fn_801A5DA0", "fn_801A8F8C", "fn_801AC0E4"],
     "decomp/src/calls1.c": ["fn_8017D3F0", "fn_8018BD60", "fn_801A8EFC", "fn_801A69E0", "fn_80176734"],
     "decomp/src/calls2.c": ["fn_801854B8", "fn_80192F20", "fn_801A20A8", "fn_801A4370", "fn_801A533C"],
     "decomp/src/leaf1.c": ["fn_8017D564", "fn_8018D1F0", "fn_8019A6A4", "fn_801A216C", "fn_801A3DBC", "fn_801AC9B4", "fn_80186230", "fn_80186258", "fn_80186280", "fn_801AC55C", "fn_8019A664", "fn_80199FA0", "fn_8017E504"],
@@ -25,12 +26,12 @@ MATCHING = {
     "decomp/src/leaf3.c": ["fn_80188DE8", "fn_80199D18", "fn_8018D294"],
     "decomp/src/leaf4.c": ["fn_8018D1A0"],
     "decomp/src/lookup.c": ["fn_801767D4", "fn_80176890", "fn_80188FEC", "fn_801891A4", "fn_80174F54", "fn_8018F590"],
+    "decomp/src/misc1.c": ["fn_801749E8", "fn_8017D170", "fn_8018C170", "fn_801A3D74", "fn_801AC6C8", "fn_801AC844"],
+    "decomp/src/misc2.c": ["fn_801A3A54", "fn_80186630", "fn_80184408", "fn_8018F91C", "fn_80186838"],
     "decomp/src/pools.c": ["fn_80174FA8", "fn_801762A0", "fn_80176780", "fn_8017683C", "fn_80188F98", "fn_80189150", "fn_8018F53C"],
     "decomp/src/queue.c": ["fn_801854FC", "fn_8018E2F8", "fn_801A43A8", "fn_801A7B58"],
     "decomp/src/special.c": ["fn_801A0690"],
     "decomp/src/tables.c": ["tbl_short"],
-    "decomp/src/wip.c": ["fn_801749E8", "fn_8017D170", "fn_8018C170", "fn_801A3D74", "fn_801AC6C8", "fn_801AC844"],
-    "decomp/src/wip2.c": ["fn_801A3A54", "fn_80186630", "fn_80184408", "fn_8018F91C", "fn_80186838"],
 }
 
 
