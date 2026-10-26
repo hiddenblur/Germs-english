@@ -51,7 +51,8 @@ The position update that consumes `+0x4E`/`+0x50` and the yaw has not been found
   and set `+0x50` / `+0x4E` from WASD or the left stick (scaled to the same range the pad produces:
   about `6 * dt`, running about `step * dt`). Yaw and pitch units are unconfirmed (the compass in the
   screenshot shows E-SE at yaw about 165, so a full circle is probably `0x1000`; check this).
-- In a recomp the hook is a function-level override or a post-call callback. psyqrecomp's modding
-  layer does not do function hooks (see the project notes), so the port must own this function.
+- In a recomp the hook is a function-level override or a post-call callback. psxrecomp's `.psxmod`
+  packages are byte patches, asset overlays and VBlank plugins (per its README, not tested here); they
+  do not describe function hooks, so the port should own this function.
 - Not checked: driving or vehicle sections (this game may not have any), how the camera reads yaw,
   and whether any other screen uses these fields.
