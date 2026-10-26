@@ -50,3 +50,30 @@ Match list: `python -I tools/libmatch.py extracted/files/SLPS_021.07 <lib>...` (
 Generated asm, linker script and macros are gitignored (they contain game code). Limits of the draft:
 the game and library text are single blobs (no per-object boundaries), `.data` and `.rdata` are not
 split per object, and short library functions (under 8 words) are skipped as ambiguous.
+
+## Compiler check (2026-10-26): the Psy-Q toolchain reproduces retail code
+
+`tools/cc_check.py` runs `CPPPSX` -> `CC1PSX -O2` -> `ASPSX` (all Win32, in `psyq/bin`, SDK 11/96), reads
+the object with `psyqlib.py`, and compares each function with the EXE at its address from
+`decomp/functions.txt`. Words the linker rewrites (calls, `$gp` offsets of globals) are masked; nothing
+else is. `tests/test_cc.py` runs it (skipped without `psyq/`).
+
+| Function | Address | Words | Result |
+|---|---|---|---|
+| `norm_angle` (wraps an angle to 0..359, a loop with branches) | `0x8018C750` | 16 | **byte-identical**, no relocations |
+| `tbl_short` (table lookup through a `$gp` pointer) | `0x8018BD44` | 7 | identical apart from the masked `$gp` offset |
+| `angle_quadrant` (the same wrap, then a 4-way range test) | `0x8018C790` | 33 | **not matching**: same code except the post-loop `(short)a` uses `$v1`/`$v1` instead of the retail `$v0`->`$v1`, and the loop's delay slot is filled from the target instead of the fall-through |
+
+What this settles:
+- The compiler is gcc 2.7.x as shipped in Psy-Q, `-O2`, default `-G8` (`-G0` changes `tbl_short`, so the
+  game was built with `$gp`-relative small data).
+- Sources are K&R/ANSI C where shorts live in registers unextended: `short norm_angle(int a)` with explicit
+  `(short)` casts matches; declaring the parameter `short` adds a sign-extension the retail code lacks.
+- The 11/96 compiler and ASPSX already give the exact bytes for these, so the SDK version mismatch with
+  the game's 4.4 libraries does not show up in compiled code (yet).
+- Delay-slot scheduling is done by `CC1PSX` itself (`.set noreorder` blocks); ASPSX only appends `nop`
+  where `CC1PSX` left a plain `j $31`.
+
+`psyqlib.py` learned two more opcodes from ASPSX objects (28 = source file, 60 = precedes an XBSS).
+The `angle_quadrant` near-miss: about 15 source shapes tried (int/short temporaries, `inline` helper,
+unsigned range tests, `for(;;)`, nested ifs); none changed the register choice.

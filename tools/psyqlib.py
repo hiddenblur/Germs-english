@@ -97,8 +97,9 @@ def parse_obj(d, p):
         elif op in (26, 48):            # xbss
             p += 8
             _, p = pstr(d, p)
-        elif op == 28:                  # sld: inc linenum
+        elif op == 28:                  # source file (ASPSX output): id, name
             p += 2
+            _, p = pstr(d, p)
         elif op == 30:
             p += 3
         elif op == 32:
@@ -114,6 +115,8 @@ def parse_obj(d, p):
             _, p = pstr(d, p)
         elif op == 46:                  # cpu type
             p += 1
+        elif op == 60:                  # precedes an XBSS in ASPSX output (u16, meaning unknown)
+            p += 2
         elif op == 74:                  # function
             sec, off = struct.unpack_from('<HI', d, p)
             name, q = pstr(d, p + 28)
