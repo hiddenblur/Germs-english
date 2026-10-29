@@ -87,3 +87,16 @@ character is 2.
 ## Building a test disc
 
 See CLAUDE.md: `insert_script.py` takes the `translations` folder directly.
+
+## Review table (QC)
+
+`python -I tools/qc_table.py` builds a read-through table of the whole script (every scene sheet, `exe`,
+`res`, and the `img` rows with the screens from `translations/screens.json`): Japanese beside English,
+status, auto-flags and a pixel-fit result for images. Run `sheets.py import`, `export` and `check` first.
+
+- Outputs: `sheets/qc/script_review.html` (offline; OK/issue/note per row saved in the browser's
+  localStorage, filters, search, "Download notes" CSV) and `sheets/qc/script_review.csv` (for Excel).
+- Flags: `LONG`, `JA-LEFT`, `PLACEHOLDER` (`%s`/`%d`/`{0}`-`{9}` differ from ja), `DOUBLE-SPACE`,
+  `TRAILING-SPACE`, `CHECK` (any other `check` problem), `IMG-FIT`.
+- It holds the game's Japanese script and artwork: it stays under the gitignored `sheets/`. Never
+  publish or commit it. It never writes to `translations/`.
