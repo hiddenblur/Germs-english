@@ -100,3 +100,18 @@ status, auto-flags and a pixel-fit result for images. Run `sheets.py import`, `e
   `TRAILING-SPACE`, `CHECK` (any other `check` problem), `IMG-FIT`.
 - It holds the game's Japanese script and artwork: it stays under the gitignored `sheets/`. Never
   publish or commit it. It never writes to `translations/`.
+
+### Editing in the browser (live review page)
+
+`python -I tools/qc_server.py` (add `--open` to launch the browser; `--port` to change 8765) serves the
+same table on `http://127.0.0.1:8765`, this machine only, with the English column editable.
+
+- Typing checks the string with the real inserter code: wrapped preview, line widths, pages, bytes, and
+  the same flags. Images (mail pages, inbox rows) show a pixel preview. Screens stay read-only.
+- **Save to sheet** (or Ctrl+S in the box) writes that one cell of `sheets/<sheet>.csv`. The CSVs stay the
+  source of truth. A cell changed on disk since the page loaded (Excel, another editor) is refused, and a
+  sheet that is open in Excel can't be written; the page says so.
+- **Re-check all** runs the whole inserter, so shared area budgets (`area N: X bytes free`) and the
+  scene-level problems show up. It runs by itself shortly after each save.
+- **Import to translations/** is `sheets.py import`. The server writes nothing else.
+- Unsaved edits are kept in the page only: closing it asks first.

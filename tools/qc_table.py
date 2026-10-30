@@ -100,18 +100,15 @@ def data_uri(png):
     return "data:image/png;base64," + base64.b64encode(png).decode()
 
 
-def image_rows(problems, bufs):
-    """Rows for img.csv plus the screens; thumbnails are the original and the final image."""
-    tr = sheets.read_translation_files()
-    raw_tr = {}
-    for p in sorted(sheets.TRANSLATIONS.glob("*.json")):
-        raw_tr.update(json.loads(p.read_text(encoding="utf-8")))
+def image_rows(problems, bufs, tr):
+    """Rows for img.csv plus the screens; thumbnails are the original and the final image.
+    tr is {id: (text or {"regions": ...}, half)} as insert_script.load_translations gives."""
     ids, kinds = [], {}
     res = (sheets.EXTRACTED / "files" / "RES.R").read_bytes()
     for sid, kind, _ in images.text_images(res):
         ids.append(sid)
         kinds[sid] = (kind, images.limit_text(kind))
-    for sid, v in raw_tr.items():
+    for sid, (v, _) in tr.items():
         if isinstance(v, dict) and "regions" in v:
             ids.append(sid)
             kinds[sid] = ("screen", v.get("note", ""))
@@ -120,11 +117,8 @@ def image_rows(problems, bufs):
         name, off = images.parse_id(sid)
         orig = tim.parse((sheets.EXTRACTED / "files" / name).read_bytes(), off)
         final = tim.parse(bytes(bufs[name]), off)
-        v = raw_tr.get(sid, "")
-        if isinstance(v, dict) and "regions" in v:
-            en = "\n".join(r["text"] for r in v["regions"])
-        else:
-            en = readable(v.get("text", "") if isinstance(v, dict) else v)
+        v = tr.get(sid, ("", True))[0]
+        en = "\n".join(r["text"] for r in v["regions"]) if isinstance(v, dict) else readable(v)
         problem = problems.get(sid)
         flags = [("IMG-FIT", problem)] if problem else []
         if en and JAPANESE.search(en):
@@ -132,6 +126,7 @@ def image_rows(problems, bufs):
         kind, limit = kinds[sid]
         rows.append(dict(scene="img", row=n, id=sid, window=kind, limit=limit, ja="", en=en,
                          status="translated" if en else "untranslated", flags=flags, kind="image",
+                         editable=kind != "screen",
                          fit=problem or ("fits" if en else "-"),
                          orig=data_uri(tim.to_png(orig, 1)),
                          new=data_uri(tim.to_png(final, 1)) if en else ""))
@@ -163,13 +158,19 @@ def summary(rows):
     return per_scene, per_flag, per_status
 
 
-def write_html(rows, path):
+def render_page(rows, live=None):
+    """The review page. live=None gives the static file; a dict ({"token": ...}) turns on editing."""
     per_scene, per_flag, per_status = summary(rows)
     payload = {"rows": rows, "scenes": ORDER, "flags": FLAGS,
                "summary": {"scene": {s: dict(c) for s, c in per_scene.items()},
                            "flag": dict(per_flag), "status": dict(per_status)}}
     blob = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    Path(path).write_text(PAGE.replace("/*DATA*/", blob), encoding="utf-8")
+    mode = json.dumps(live).replace("</", "<\\/")
+    return PAGE.replace("/*DATA*/", blob).replace("/*LIVE*/null", mode)
+
+
+def write_html(rows, path):
+    Path(path).write_text(render_page(rows), encoding="utf-8")
 
 
 PAGE = """<!doctype html>
@@ -203,6 +204,12 @@ mark{background:var(--hl);color:inherit}
 .imgs img{image-rendering:pixelated;max-width:100%;width:360px;border:1px solid var(--line)}
 .imgs figcaption{font-size:11px;color:var(--mut)}
 textarea{width:100%;box-sizing:border-box;margin-top:4px;height:3.2em}
+textarea.ed{height:auto;min-height:5em;font-family:ui-monospace,Consolas,monospace;font-size:13px;margin-top:0}
+textarea.dirty{outline:2px solid #e0a000}
+.res{font-size:12px;margin-top:4px}.res .bad{color:var(--bad)}.res .good{color:var(--ok)}
+pre.prev{margin:4px 0 0;padding:4px 6px;background:var(--head);border:1px solid var(--line);font-size:12px;white-space:pre-wrap}
+pre.prev:empty{display:none}
+button.save{margin-top:4px}
 @media (max-width:800px){col.c1,col.c2{width:90px}}
 </style></head><body>
 <header>
@@ -212,13 +219,21 @@ textarea{width:100%;box-sizing:border-box;margin-top:4px;height:3.2em}
 <div class="bar">
 <select id="fScene"></select><select id="fStatus"></select><select id="fFlag"></select><select id="fQc"></select>
 <input id="q" type="search" placeholder="Search id, Japanese, English, notes" size="34">
-<button id="dl">Download notes (CSV)</button><span id="count" class="m"></span>
+<button id="dl">Download notes (CSV)</button><button id="chk" hidden>Re-check all</button><button id="imp" hidden>Import to translations/</button><span id="count" class="m"></span><span id="msg" class="m"></span>
 </div></header>
 <table><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup>
 <thead><tr><th>Scene / id</th><th>Window</th><th>Japanese</th><th>English</th><th>QC</th></tr></thead>
 <tbody id="body"></tbody></table>
 <script>
 const D=/*DATA*/;
+const LIVE=/*LIVE*/null;
+const drafts={},chkT={};
+const rowOf=id=>D.rows.find(r=>r.id===id);
+async function api(path,body){
+ const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Token":LIVE.token},body:JSON.stringify(body||{})});
+ const j=await r.json().catch(()=>({error:"bad response from server"}));j._status=r.status;return j}
+const flagsHtml=r=>r.flags.map(f=>`<span class="flag" title="${esc(f[1]||"")}">${f[0]}</span>`).join("");
+const editable=r=>LIVE&&(r.kind==="text"||r.editable);
 const KEY="germs-qc-v1";
 let qc={};try{qc=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(qc))}catch(e){}}
@@ -231,8 +246,14 @@ opts($("fScene"),[["","All scenes"],...D.scenes.map(s=>[s,s])]);
 opts($("fStatus"),[["","Any status"],["translated","translated"],["untranslated","untranslated"],["identical","identical to Japanese"]]);
 opts($("fFlag"),[["","Any flag"],["ANY","Any flag set"],["NONE","No flags"],...D.flags.map(f=>[f,f])]);
 opts($("fQc"),[["","Any QC mark"],["unmarked","unmarked"],["ok","OK"],["issue","issue"],["note","has note"]]);
+function computeSummary(){
+ const s={scene:{},flag:{},status:{}};
+ for(const r of D.rows){const c=s.scene[r.scene]=s.scene[r.scene]||{total:0,translated:0,flagged:0};
+  c.total++;if(r.status!=="untranslated")c.translated++;if(r.flags.length)c.flagged++;
+  s.status[r.status]=(s.status[r.status]||0)+1;for(const f of r.flags)s.flag[f[0]]=(s.flag[f[0]]||0)+1}
+ return s}
 function renderSummary(){
- const s=D.summary,t=D.rows.length,tr=t-(s.status.untranslated||0);
+ const s=computeSummary(),t=D.rows.length,tr=t-(s.status.untranslated||0);
  let h=`<div class="m"><b>${t}</b> rows, <b>${tr}</b> translated (${(100*tr/t).toFixed(1)}%), `+
   Object.entries(s.status).map(([k,v])=>`${v} ${k}`).join(", ")+`</div><div class="sum">`;
  h+=D.scenes.map(sc=>{const c=s.scene[sc]||{};return `<span class="chip" data-scene="${sc}"><b>${sc}</b> ${c.translated||0}/${c.total||0}`+(c.flagged?` · ${c.flagged} flagged`:"")+`</span>`}).join("");
@@ -240,10 +261,15 @@ function renderSummary(){
  $("sum").innerHTML=h;
  $("sum").onclick=e=>{const c=e.target.closest(".chip");if(!c)return;
   if(c.dataset.scene)$("fScene").value=c.dataset.scene;if(c.dataset.flag)$("fFlag").value=c.dataset.flag;draw()}}
+function editBox(r){
+ const v=drafts[r.id]!==undefined?drafts[r.id]:r.en;
+ return `<textarea class="ed${v!==r.en?" dirty":""}" data-edit="1" spellcheck="false">${esc(v)}</textarea>`+
+  `<button class="save" data-save="1">Save to sheet</button> <span class="res" data-res>${r.area?esc(r.area):""}</span><pre class="prev" data-prev></pre>`}
 function cellEn(r,term){
  if(r.kind==="image"){return `<div class="imgs"><figure><img loading="lazy" src="${r.orig}"><figcaption>original</figcaption></figure>`+
-  (r.new?`<figure><img loading="lazy" src="${r.new}"><figcaption>English, as built</figcaption></figure>`:"")+`</div>`+
-  `<div class="m">fit: ${esc(r.fit)}</div>`+(r.en?`<div class="t">${fmt(r.en,term)}</div>`:"")}
+  `<figure data-newfig ${r.new?"":"hidden"}><img loading="lazy" src="${r.new||""}"><figcaption>English, as built</figcaption></figure></div>`+
+  `<div class="m" data-fit>fit: ${esc(r.fit)}</div>`+(editable(r)?editBox(r):(r.en?`<div class="t">${fmt(r.en,term)}</div>`:""))}
+ if(editable(r))return editBox(r);
  return `<div class="t">${r.en?fmt(r.en,term):'<span class="m">(empty)</span>'}</div>`}
 function draw(){
  const sc=$("fScene").value,st=$("fStatus").value,fl=$("fFlag").value,qf=$("fQc").value,term=$("q").value.trim().toLowerCase();
@@ -257,7 +283,7 @@ function draw(){
   if(term&&!(r.id+" "+r.ja+" "+r.en+" "+(q.n||"")).toLowerCase().includes(term))continue;
   n++;
   out.push(`<tr data-id="${esc(r.id)}" class="${q.s?"q-"+q.s:""}"><td><b>${r.scene}</b> #${r.row}<div class="id">${esc(r.id)}</div>`+
-   `<div class="st-${r.status}">${r.status}</div>${r.flags.map(f=>`<span class="flag" title="${esc(f[1]||"")}">${f[0]}</span>`).join("")}</td>`+
+   `<div class="st-${r.status}" data-st>${r.status}</div><div data-fl>${flagsHtml(r)}</div></td>`+
    `<td class="m">${esc(r.window)}<br>${esc(r.limit)}</td>`+
    `<td>${r.kind==="image"?'<span class="m">(image)</span>':`<div class="t">${fmt(r.ja,term)}</div>`}</td>`+
    `<td>${cellEn(r,term)}</td>`+
@@ -282,18 +308,76 @@ $("dl").onclick=()=>{
  for(const [id,q] of Object.entries(qc))lines.push([id,q.s||"",q.n||"",(byId[id]?byId[id].flags.map(f=>f[0]).join(" "):"")].map(cell).join(","));
  const a=document.createElement("a");a.download="germs_qc_notes.csv";
  a.href=URL.createObjectURL(new Blob(["\\ufeff"+lines.join("\\r\\n")],{type:"text/csv"}));a.click()};
+function patchRow(tr,r){
+ const st=tr.querySelector("[data-st]");st.textContent=r.status;st.className="st-"+r.status;
+ tr.querySelector("[data-fl]").innerHTML=flagsHtml(r);
+ const fit=tr.querySelector("[data-fit]");if(fit)fit.textContent="fit: "+r.fit}
+function showCheck(tr,j){
+ const res=tr.querySelector("[data-res]"),prev=tr.querySelector("[data-prev]");
+ if(j.error){res.innerHTML=`<span class="bad">${esc(j.error)}</span>`;return}
+ let h=j.problem?`<span class="bad">${esc(j.problem)}</span>`:(j.en_empty?`<span class="m">empty: keeps the Japanese</span>`:`<span class="good">fits</span>`);
+ h+=j.flags.map(f=>` <span class="flag" title="${esc(f[1]||"")}">${f[0]}</span>`).join("");
+ if(j.widths)h+=` · widths ${j.widths.join(", ")}${j.pages?` · ${j.pages} page${j.pages>1?"s":""}`:""}`;
+ if(j.bytes!==undefined)h+=` · ${j.bytes}${j.capacity?"/"+j.capacity:""} bytes`;
+ const r=rowOf(tr.dataset.id);if(r.area)h+=` · ${esc(r.area)}`;
+ res.innerHTML=h;prev.innerHTML=j.preview?fmt(j.preview,""):"";
+ const fig=tr.querySelector("[data-newfig]");
+ if(fig&&j.image){fig.hidden=false;fig.querySelector("img").src=j.image}}
+async function checkRow(tr){
+ const id=tr.dataset.id,en=drafts[id]!==undefined?drafts[id]:rowOf(id).en;
+ showCheck(tr,await api("/api/check",{id,en}))}
+async function saveRow(tr){
+ const id=tr.dataset.id,r=rowOf(id),en=drafts[id]!==undefined?drafts[id]:r.en;
+ const j=await api("/api/save",{id,en,base:r.en});
+ if(j.error){$("msg").textContent="";showCheck(tr,j);return}
+ r.en=en;r.status=j.status;r.flags=j.flags;if(j.fit)r.fit=j.fit;if(j.image)r.new=j.image;
+ delete drafts[id];tr.querySelector("textarea.ed").classList.remove("dirty");
+ patchRow(tr,r);showCheck(tr,j);renderSummary();
+ $("msg").textContent="saved "+id+" to the sheet";
+ clearTimeout(chkT.all);chkT.all=setTimeout(checkAll,600)}
+async function checkAll(){
+ $("msg").textContent="checking everything...";
+ const j=await api("/api/checkall");
+ if(j.error){$("msg").textContent=j.error;return}
+ for(const r of D.rows){const u=j.rows[r.id];if(!u)continue;
+  r.flags=u.flags;r.status=u.status;r.area=u.area||"";if(u.fit)r.fit=u.fit}
+ for(const tr of document.querySelectorAll("#body tr")){patchRow(tr,rowOf(tr.dataset.id))}
+ renderSummary();
+ $("msg").textContent=j.problems?`check: ${j.problems} problem(s) in the sheets`:"check: no problems"}
+if(LIVE){
+ for(const id of ["chk","imp"])$(id).hidden=false;
+ $("chk").onclick=checkAll;
+ $("imp").onclick=async()=>{
+  if(!confirm("Write translations/*.json from the sheets (same as sheets.py import)?"))return;
+  const j=await api("/api/import");$("msg").textContent=j.error||j.output};
+ $("body").addEventListener("input",e=>{
+  if(!e.target.dataset.edit)return;const tr=e.target.closest("tr"),id=tr.dataset.id;
+  drafts[id]=e.target.value;e.target.classList.toggle("dirty",drafts[id]!==rowOf(id).en);
+  clearTimeout(chkT[id]);chkT[id]=setTimeout(()=>checkRow(tr),300)});
+ $("body").addEventListener("click",e=>{if(e.target.dataset.save)saveRow(e.target.closest("tr"))});
+ $("body").addEventListener("keydown",e=>{
+  if(e.target.dataset.edit&&(e.ctrlKey||e.metaKey)&&e.key==="s"){e.preventDefault();saveRow(e.target.closest("tr"))}});
+ window.addEventListener("beforeunload",e=>{
+  if(Object.entries(drafts).some(([id,v])=>v!==rowOf(id).en)){e.preventDefault();e.returnValue=""}})}
 renderSummary();draw();
+if(LIVE&&LIVE.differing)$("msg").textContent=LIVE.differing+" string(s) differ between the sheets and translations/ (the sheets win here; Import writes translations/)";
 </script></body></html>
 """
 
 
-def main():
-    tr = insert_script.load_translations([sheets.TRANSLATIONS])
-    bufs, plist = insert_script.apply(sheets.EXTRACTED, tr)
+def build(tr=None, applied=None):
+    """All review rows. tr defaults to translations/*.json; the live server passes the sheets' English."""
+    if tr is None:
+        tr = insert_script.load_translations([sheets.TRANSLATIONS])
+    bufs, plist = applied or insert_script.apply(sheets.EXTRACTED, tr)
     problems = {}
     for where, msg in plist:
         problems[where] = f"{problems[where]}; {msg}" if where in problems else msg
-    rows = text_rows(problems) + image_rows(problems, bufs)
+    return text_rows(problems) + image_rows(problems, bufs, tr)
+
+
+def main():
+    rows = build()
     QC.mkdir(parents=True, exist_ok=True)
     write_csv(rows, QC / "script_review.csv")
     write_html(rows, QC / "script_review.html")
