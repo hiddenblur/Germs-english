@@ -210,6 +210,8 @@ textarea.dirty{outline:2px solid #e0a000}
 pre.prev{margin:4px 0 0;padding:4px 6px;background:var(--head);border:1px solid var(--line);font-size:12px;white-space:pre-wrap}
 pre.prev:empty{display:none}
 button.save{margin-top:4px}
+#toast{position:fixed;right:16px;bottom:16px;max-width:min(420px,calc(100vw - 32px));padding:10px 14px;border-radius:6px;background:var(--ok);color:#fff;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.35);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:10}
+#toast.show{opacity:1;transform:none}#toast.err{background:var(--bad)}
 @media (max-width:800px){col.c1,col.c2{width:90px}}
 </style></head><body>
 <header>
@@ -224,13 +226,18 @@ button.save{margin-top:4px}
 <table><colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup>
 <thead><tr><th>Scene / id</th><th>Window</th><th>Japanese</th><th>English</th><th>QC</th></tr></thead>
 <tbody id="body"></tbody></table>
+<div id="toast" role="status" aria-live="polite"></div>
 <script>
 const D=/*DATA*/;
 const LIVE=/*LIVE*/null;
 const drafts={},chkT={};
 const rowOf=id=>D.rows.find(r=>r.id===id);
+let toastT;
+function toast(text,err){const t=$("toast");t.textContent=text;t.className="show"+(err?" err":"");
+ clearTimeout(toastT);toastT=setTimeout(()=>{t.className=""},err?5000:2500)}
 async function api(path,body){
- const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Token":LIVE.token},body:JSON.stringify(body||{})});
+ let r;try{r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Token":LIVE.token},body:JSON.stringify(body||{})})}
+ catch(e){return {error:"cannot reach the server (is qc_server.py still running?)",_status:0}}
  const j=await r.json().catch(()=>({error:"bad response from server"}));j._status=r.status;return j}
 const flagsHtml=r=>r.flags.map(f=>`<span class="flag" title="${esc(f[1]||"")}">${f[0]}</span>`).join("");
 const editable=r=>LIVE&&(r.kind==="text"||r.editable);
@@ -329,11 +336,12 @@ async function checkRow(tr){
 async function saveRow(tr){
  const id=tr.dataset.id,r=rowOf(id),en=drafts[id]!==undefined?drafts[id]:r.en;
  const j=await api("/api/save",{id,en,base:r.en});
- if(j.error){$("msg").textContent="";showCheck(tr,j);return}
+ if(j.error){$("msg").textContent="";showCheck(tr,j);toast("Not saved: "+j.error,true);return}
  r.en=en;r.status=j.status;r.flags=j.flags;if(j.fit)r.fit=j.fit;if(j.image)r.new=j.image;
  delete drafts[id];tr.querySelector("textarea.ed").classList.remove("dirty");
  patchRow(tr,r);showCheck(tr,j);renderSummary();
  $("msg").textContent="saved "+id+" to the sheet";
+ toast(j.problem?"Saved "+id+" (with a problem: see the check line)":"Saved "+id+" to the sheet");
  clearTimeout(chkT.all);chkT.all=setTimeout(checkAll,600)}
 async function checkAll(){
  $("msg").textContent="checking everything...";
