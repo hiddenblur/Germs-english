@@ -12,6 +12,10 @@ File names are "<FILE>_<OFFSET>.png", e.g. "SH1_B9004.png" for M/A/SH1.RM@B9004 
 (each block is read at its centre pixel, so scaled-up edits are fine). Colours are matched
 to the TIM's own palette: a pixel that keeps the colour it already had keeps its palette
 index (several palette entries share a colour), anything else gets the nearest entry.
+
+The HUD clock (RES_8901C) is special: see SEGMENT_DIGITS. Its digits can be moved freely, but each
+must keep its original shape and colours (move it, don't redraw it); the tool finds every digit in
+the PNG and puts its palette indices back at the new spot, and reports each move it found.
 """
 import json
 import struct
@@ -26,6 +30,17 @@ import tim
 ROOT = Path(__file__).resolve().parent.parent
 EDITS = ROOT / "edits"
 SHORT = {"RES.R": "RES", "SCE.S": "SCE"}
+
+# Images whose digits are lit by the game rewriting palette entries: the HUD clock (RES.R@8901C)
+# gives each of the 7 segments of each of its 6 digits its own palette index, and the game
+# writes the lit/unlit colour of those entries into the CLUT at VRAM (0, 484) every time the time
+# changes (seen live: entries 2-0x2B change, the pixels never do). A digit is only ever "which
+# indices sit where", so a PNG edit that merges equal colours would break it. These are the
+# segment index ranges per digit, in reading order: day tens, day ones, hour tens/ones, minute tens/ones.
+SEGMENT_DIGITS = {
+    "RES.R@8901C": [("day tens", 0x02, 0x08), ("day ones", 0x09, 0x0F), ("hour tens", 0x10, 0x16),
+                    ("hour ones", 0x17, 0x1D), ("minute tens", 0x1E, 0x24), ("minute ones", 0x25, 0x2B)],
+}
 
 
 def short_name(sid):
@@ -87,23 +102,79 @@ def read_png(path):
     return w, h, px
 
 
-def apply_png(t, path, base_pixels):
-    """New pixel indices for TIM t from an edited PNG; base_pixels = what the build drew."""
+def place_digits(t, pal, base, color, digits):
+    """Where each segment digit (name, lo, hi index range) sits in an edited PNG, as
+    [(name, dx, dy)] shifts from its place in `base`. The digit's whole box must appear
+    unchanged in the PNG (same shape and colours); digits are assigned to the matches that move
+    them least. Raises ValueError if a digit can't be found."""
+    W, H = t.width, t.height
+    found = []
+    for name, lo, hi in digits:
+        cells = [(i % W, i // W) for i, v in enumerate(base) if lo <= v <= hi]
+        x0, x1 = min(c[0] for c in cells), max(c[0] for c in cells)
+        y0, y1 = min(c[1] for c in cells), max(c[1] for c in cells)
+        box = [(x - x0, y - y0, pal[base[y * W + x]]) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
+        spots = [(nx, ny, nx - x0, ny - y0)
+                 for ny in range(0, H - (y1 - y0)) for nx in range(0, W - (x1 - x0))
+                 if all(color(nx + bx, ny + by) == c for bx, by, c in box)]
+        if not spots:
+            raise ValueError(f"clock digit {name!r} not found: each digit must keep its original "
+                             f"{x1 - x0 + 1}x{y1 - y0 + 1} shape and colours (move it, don't redraw it)")
+        found.append((name, spots))
+    best = None
+
+    def search(k, used, cost, pick):
+        nonlocal best
+        if best is not None and cost >= best[0]:
+            return
+        if k == len(found):
+            best = (cost, list(pick))
+            return
+        for ax, ay, dx, dy in found[k][1]:
+            if (ax, ay) not in used:
+                search(k + 1, used | {(ax, ay)}, cost + abs(dx) + abs(dy), pick + [(found[k][0], dx, dy)])
+
+    search(0, frozenset(), 0, [])
+    if best is None:
+        raise ValueError("clock digits overlap: two digits matched the same spot")
+    return best[1]
+
+
+def apply_png(t, path, base_pixels, digits=None):
+    """New pixel indices for TIM t from an edited PNG; base_pixels = what the build drew.
+    digits: segment digit ranges (SEGMENT_DIGITS) whose palette indices must follow the digit."""
     w, h, px = read_png(path)
     sx, sy = w // t.width, h // t.height
     if (w, h) != (t.width * sx, t.height * sy) or sx != sy or sx < 1:
         raise ValueError(f"{path}: {w}x{h} is not a whole multiple of {t.width}x{t.height}")
     pal = [tim.rgb(c) for c in t.clut]
+    reserved = {k for _, lo, hi in digits or () for k in range(lo, hi + 1)}   # segment indices: placed, never picked
+
+    def index_for(rgb):
+        ok = [k for k in range(len(pal)) if k not in reserved] or list(range(len(pal)))
+        exact = [k for k in ok if pal[k] == rgb]
+        return exact[0] if exact else min(ok, key=lambda k: sum((a - b) ** 2 for a, b in zip(pal[k], rgb)))
+
     out = bytearray(base_pixels)
     for y in range(t.height):
         for x in range(t.width):
             rgb = px[(y * sx + sx // 2) * w + x * sx + sx // 2]
             i = y * t.width + x
-            if pal[base_pixels[i]] == rgb:
+            if pal[base_pixels[i]] == rgb and base_pixels[i] not in reserved:
                 continue
-            exact = [k for k, c in enumerate(pal) if c == rgb]
-            out[i] = exact[0] if exact else min(
-                range(len(pal)), key=lambda k: sum((a - b) ** 2 for a, b in zip(pal[k], rgb)))
+            if pal[base_pixels[i]] == rgb and not digits:
+                continue
+            out[i] = index_for(rgb)
+    if digits:
+        color = lambda x, y: px[(y * sx + sx // 2) * w + x * sx + sx // 2]
+        W = t.width
+        moves = place_digits(t, pal, base_pixels, color, digits)
+        for (name, lo, hi), (_, dx, dy) in zip(digits, moves):
+            for i, v in enumerate(base_pixels):
+                if lo <= v <= hi:
+                    out[(i // W + dy) * W + i % W + dx] = v
+            if (dx, dy):
+                print(f"clock digit {name}: moved by ({dx}, {dy})")
     return out
 
 
@@ -120,7 +191,7 @@ def apply_edits(bufs, problems, wanted):
         try:
             name, off = images.parse_id(sid)
             t = tim.parse(bufs[name], off)
-            t.pixels = apply_png(t, png, t.pixels)
+            t.pixels = apply_png(t, png, t.pixels, SEGMENT_DIGITS.get(sid))
             bufs[name][off:off + t.size] = t.to_bytes()
         except (ValueError, KeyError) as err:
             problems.append((png.name, str(err)))

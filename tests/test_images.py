@@ -162,3 +162,50 @@ class ImageEditTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless((ROOT / "extracted" / "files" / "RES.R").exists(), "needs the extracted disc")
+class ClockDigitTests(unittest.TestCase):
+    """The HUD clock lights digits by rewriting palette entries 2-0x2B, so a PNG edit must keep
+    each segment's palette index when a digit is moved."""
+
+    @classmethod
+    def setUpClass(cls):
+        import image_edit
+        import tim
+        cls.image_edit, cls.tim = image_edit, tim
+        cls.t = tim.parse((ROOT / "extracted" / "files" / "RES.R").read_bytes(), 0x8901C)
+        cls.digits = image_edit.SEGMENT_DIGITS["RES.R@8901C"]
+
+    def png_of(self, pixels):
+        import tempfile
+        t = self.tim.parse((ROOT / "extracted" / "files" / "RES.R").read_bytes(), 0x8901C)
+        t.pixels = pixels
+        path = Path(tempfile.mkdtemp()) / "clock.png"
+        path.write_bytes(self.tim.to_png(t, 2))
+        return path
+
+    def test_unchanged_png_keeps_every_index(self):
+        out = self.image_edit.apply_png(self.t, self.png_of(self.t.pixels), self.t.pixels, self.digits)
+        self.assertEqual(out, self.t.pixels)
+
+    def test_moved_digits_keep_their_segment_indices(self):
+        W, base = self.t.width, self.t.pixels
+        moved = bytearray(base)
+        for name, lo, hi in self.digits[4:]:              # both minute digits, 2 px down
+            for i, v in enumerate(base):
+                if lo <= v <= hi:
+                    moved[i] = 0
+            for i, v in enumerate(base):
+                if lo <= v <= hi:
+                    moved[i + 2 * W] = v
+        out = self.image_edit.apply_png(self.t, self.png_of(moved), base, self.digits)
+        self.assertEqual(out, moved)
+
+    def test_redrawn_digit_is_refused(self):
+        base = self.t.pixels
+        broken = bytearray(base)
+        i = next(i for i, v in enumerate(base) if v == 0x25)
+        broken[i] = 0
+        with self.assertRaises(ValueError):
+            self.image_edit.apply_png(self.t, self.png_of(broken), base, self.digits)

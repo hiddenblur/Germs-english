@@ -229,3 +229,17 @@ run the retail and patched code on the same Japanese strings and require identic
    A variable-width font is also possible, but non-4-px-aligned widths need compositing into a RAM buffer before the VRAM upload.
 3. Byte collisions need a new encoding: ASCII digits are colour codes and `,` is a line break, so English digits, commas and spaces need remapping. The space currently means a full cell, which menu alignment relies on.
 4. Line and column limits (row limit at `0x98(sp)` in the loop above) and the window sizes will need checking against English line lengths.
+
+
+## HUD clock (confirmed live in DuckStation)
+
+- `RES.R@8901C` is an 8bpp 96x32 TIM (VRAM image (336, 64), CLUT (0, 484)). The game draws it as ONE
+  sprite (cmd `0x66`, 96x32, uv (32, 64), at screen (16, 24)); no per-digit primitives exist.
+- The digits are lit through the palette: each of the 6 digits (day tens/ones, hour tens/ones,
+  minute tens/ones) has 7 segments with their own palette indices (`0x02-0x08`, `0x09-0x0F`,
+  `0x10-0x16`, `0x17-0x1D`, `0x1E-0x24`, `0x25-0x2B`). Every time change the game rewrites those CLUT
+  entries at VRAM (0, 484) (white = lit, 0 = off); the image pixels never change (VRAM watch on the
+  image: no writes). `0x30` is the static white (the "Day" text and the colon).
+- So the digit positions are just where those indices sit in the TIM: moving a digit needs no EXE
+  patch, only the same indices at the new spot. `tools/image_edit.py` (`SEGMENT_DIGITS`) does that
+  for PNG edits.
