@@ -536,8 +536,109 @@ k_done:
 """
 
 
+# Driving controls for an analog pad. While the player is in the car (player +0x46 == 1) the city
+# frame calls 0x801ABC70(controller state, held pad word) instead of the movement function. It
+# works on the car state at 0x801E1158 (docs/controls.md): L1/R1 turn the wheel (+4, -45..45),
+# Triangle presses the forward pedal (+8) and Cross the reverse pedal (+0xC); in a gear (+6: 1
+# forward, -1 reverse) the other pedal is the brake, and a pedal only changes the gear at a
+# standstill. This wrapper leaves a digital pad alone. In analog mode (ID 0x73) it rewrites the
+# pedal buttons before the call:
+#   Cross    -> forward pedal (brakes first while reversing)
+#   Triangle -> reverse pedal (brakes first while going forward)
+#   Square   -> whichever pedal brakes in the current gear; the gear is put back afterwards, so
+#               holding it at a standstill never drives off the other way
+# and afterwards sets the wheel straight from the left stick X (full deflection = full lock).
+DRIVE = 0x801ABC70
+DRIVE_CALL = 0x801A87EC
+CAR = 0x801E1158
+STEER_MAX = 45                  # where L1/R1 stop
+DRIVE_WRAPPER = f"""
+    addiu $sp, $sp, -40
+    sw    $ra, 32($sp)
+    sw    $s0, 16($sp)
+    sw    $s1, 20($sp)
+    sw    $s2, 24($sp)
+    lui   $s0, {CAR >> 16:#x}
+    ori   $s0, $s0, {CAR & 0xFFFF:#x}
+    lui   $t0, 0x8000
+    ori   $t0, $t0, 0x7570          # BIOS pad buffer, port 1
+    lbu   $t1, 1($t0)
+    addiu $t2, $zero, 0x73
+    bne   $t1, $t2, d_call          # digital pad: retail controls
+    addiu $s2, $zero, 0             # 0 = digital, 1 = analog, 2 = analog and braking
+    addiu $s2, $zero, 1
+    lh    $s1, 6($s0)               # gear before the call
+    andi  $t3, $a1, 0x40            # Cross
+    andi  $t4, $a1, 0x10            # Triangle
+    andi  $t5, $a1, 0x80            # Square
+    addiu $t6, $zero, -0xD1
+    beq   $t5, $zero, d_pedals
+    and   $a1, $a1, $t6             # drop all three; the pedals are set again below
+    addiu $s2, $zero, 2
+    addiu $t6, $zero, -1
+    beq   $s1, $t6, d_call
+    ori   $a1, $a1, 0x10            # reversing: the forward pedal brakes
+    j     d_call
+    xori  $a1, $a1, 0x50            # otherwise the reverse pedal does
+d_pedals:
+    beq   $t3, $zero, d_tri
+    nop
+    j     d_call
+    ori   $a1, $a1, 0x10            # Cross: forward pedal
+d_tri:
+    beq   $t4, $zero, d_call
+    nop
+    ori   $a1, $a1, 0x40            # Triangle: reverse pedal
+d_call:
+    jal   {DRIVE:#x}
+    nop
+    beq   $s2, $zero, d_done
+    addiu $t2, $zero, 2
+    bne   $s2, $t2, d_steer
+    nop
+    sh    $s1, 6($s0)               # Square never changes the gear
+d_steer:
+    bne   $v0, $zero, d_done        # the car is being left or stopped by an event
+    lui   $t0, 0x8000
+    ori   $t0, $t0, 0x7570
+    lbu   $t4, 6($t0)               # left stick X
+    nop
+    addiu $t4, $t4, -0x80
+    addiu $t5, $t4, {STICK_DEADZONE}
+    sltiu $t5, $t5, {2 * STICK_DEADZONE + 1}
+    bne   $t5, $zero, d_done        # dead zone: L1/R1 and the retail self-centring still apply
+    nop
+    bltz  $t4, d_scale
+    addiu $t5, $t4, {STICK_DEADZONE}
+    addiu $t5, $t4, {-STICK_DEADZONE}
+d_scale:
+    sll   $t6, $t5, 3
+    subu  $t6, $t6, $t5
+    sra   $t6, $t6, 4               # (stick - dead zone) * 7 / 16: 103 -> 45
+    slti  $t7, $t6, {STEER_MAX + 1}
+    bne   $t7, $zero, d_max
+    nop
+    addiu $t6, $zero, {STEER_MAX}
+d_max:
+    slti  $t7, $t6, {-STEER_MAX}
+    beq   $t7, $zero, d_min
+    nop
+    addiu $t6, $zero, {-STEER_MAX}
+d_min:
+    sh    $t6, 4($s0)               # stick left = L1: negative
+d_done:
+    lw    $s0, 16($sp)
+    lw    $s1, 20($sp)
+    lw    $s2, 24($sp)
+    lw    $ra, 32($sp)
+    nop
+    jr    $ra
+    addiu $sp, $sp, 40
+"""
+
 # (start, end, expected retail first instruction, new code)
 PAD_FIX = STICK_BLOCK + len(asm(STICK_WRAPPER, STICK_BLOCK))
+DRIVE_FIX = PAD_FIX + len(asm(PAD_FIX_ASM, PAD_FIX))
 
 PATCHES = [
     # narration typewriter
@@ -562,8 +663,9 @@ PATCHES = [
     # weapon name renderer
     (0x8018C8E4, 0x8018CB50, "addu $s1, $v0, $zero", WEAPON_DRAW),
     # analog sticks: wrapper in the dead GsSetFlatLight, reached from the movement call site
-    (STICK_BLOCK, STICK_BLOCK_END, "addiu $sp, $sp, -144", STICK_WRAPPER + PAD_FIX_ASM),
+    (STICK_BLOCK, STICK_BLOCK_END, "addiu $sp, $sp, -144", STICK_WRAPPER + PAD_FIX_ASM + DRIVE_WRAPPER),
     (PAD_READ_CALL, PAD_READ_CALL + 4, f"jal {BIOS_PAD:#x}", f"jal {PAD_FIX:#x}"),
+    (DRIVE_CALL, DRIVE_CALL + 4, f"jal {DRIVE:#x}", f"jal {DRIVE_FIX:#x}"),
 ] + [(a, a + 4, f"jal {MOVE:#x}", f"jal {STICK_BLOCK:#x}") for a in MOVE_CALLS] + [
 ] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
 

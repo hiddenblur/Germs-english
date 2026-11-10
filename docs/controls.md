@@ -68,8 +68,10 @@ that runs it and then reads the sticks from the BIOS pad buffer `0x80007570` (+4
 |---|---|---|---|
 | right X | yaw `+0x6E`, `stick * dt >> 5` | Left/Right | confirmed live (compass E to S); needs `+0x3C` set too |
 | left Y | forward `+0x50`, `-stick * dt * 11 >> 7` (full = run speed) | Triangle/Cross | confirmed live (view moved) |
-| right Y | pitch `+0x6C`, `stick * dt >> 6`, clamped -25..65 | Up/Down | unit test only |
-| left X | strafe `+0x4E`, `stick * dt * 6 >> 7` | L1/R1 | unit test only |
+| right Y | pitch `+0x6C`, `stick * dt >> 6`, clamped -25..65 | Up/Down | confirmed in game by the user (2026-11-09) |
+| left X | strafe `+0x4E`, `stick * dt * 6 >> 7` | L1/R1 | confirmed in game by the user (2026-11-09) |
+
+All four stick axes are confirmed working in game (user playtest, 2026-11-09).
 
 Digital pads (ID `0x41`) and `[+0x46] != 0` are untouched. The Analog button turns analog mode on
 (DuckStation resets it on a state load).
@@ -128,3 +130,50 @@ only applies the `[a0+0x42]` diagonal factors (x0.9 / x0.7). The stick wrapper r
 indoors its velocity was 10x too small (user: "walking is very slow in buildings"). It now saves `a1`
 and applies the same x10 when `a1 != 2`. The city path is unchanged (the 0.9/0.7 factor is not
 reproduced). Interiors use finer position units, so the x10 is what makes the pad and stick speeds match.
+
+## Driving (found 2026-11-09 from the code; behaviour confirmed by playing the patched disc)
+
+The game does have a car. In the city frame routine (`0x801A8768`) the player mode `[+0x46]` picks
+the input function: 1 = in the car, `jal 0x801ABC70` at `0x801A87EC` (the only caller) with
+`a0 = 0x801E0710` and `a1 =` the held pad word; anything else goes on to the on-foot `0x80199548`.
+A non-zero return puts the city into state 4 (`0x356($gp)`), inferred to be leaving the car.
+
+`0x801ABC70` works on the **car state at `0x801E1158`**:
+
+| Offset | Address | Meaning |
+|---|---|---|
+| `+0x00` | `0x801E1158` | halfword set by the physics; while set, `0x8019A3E8` and `0x801ABA88` run first and can skip the input |
+| `+0x04` | `0x801E115C` | wheel, -45..45. L1 = down, R1 = up, `dt` per frame; returns to 0 by itself while the speed is not 0 |
+| `+0x06` | `0x801E115E` | gear: 1 forward, -1 reverse, 0 after init. A pedal changes it only while the speed is 0, and that zeroes both pedals |
+| `+0x08` | `0x801E1160` | forward pedal, 0..0x100: Triangle held = `+dt`, released = `-dt` |
+| `+0x0C` | `0x801E1164` | reverse pedal, same, on Cross |
+| `+0x10` | `0x801E1168` | speed this frame, written by the physics |
+| `+0x24` | `0x801E117C` | look up/down, -20..20 (d-pad Up/Down) |
+| `+0x26` | `0x801E117E` | look left/right, -65..65 (d-pad Left/Right) |
+
+(`0x801E114C`/`0x801E114E`, which the on-foot function changes when `[+0x46] != 0`, are a different
+pair: `0x801E1118 + 0x34/0x36`.)
+
+Physics, `0x801AA360`: in gear 1 the engine value is `0x320 + 30 * forward pedal` (at most `0x1964`)
+`- 45 * reverse pedal` (at least `0x320`, the idle value, which gives speed 0); in gear -1 the two
+pedals swap and the speed is negative. So the pedal of the other direction is the brake, and
+retail Cross is "brake, then reverse". All the inertia is in the pedals' ramp.
+
+### Analog driving controls (2026-11-09)
+
+`DRIVE_WRAPPER` in `tools/patch_exe.py` (after the pad fix in the old `GsSetFlatLight`, block now
+212 of 348 words) wraps the call at `0x801A87EC`. A digital pad (ID `0x41`) is untouched. In
+analog mode (ID `0x73`):
+
+| Input | Does | How |
+|---|---|---|
+| Cross | accelerate | passed on as the Triangle bit (forward pedal); brakes first if reversing |
+| Triangle | reverse | passed on as the Cross bit (reverse pedal); brakes first if going forward |
+| Square | brake | passed on as the pedal that brakes in the current gear, and the gear is restored after the call, so it stops the car and holds it instead of driving off the other way. Wins over Cross/Triangle |
+| left stick X | steer | wheel `= (stick - dead zone 24) * 7 >> 4`, clamped to -45..45, written after the call. In the dead zone L1/R1 and the self-centring work as before |
+
+D-pad look, L1/R1 and every other button are passed through. Unit test: `tests/test_drive.py`
+(unicorn, runs the real `0x801ABC70`). **Confirmed in game by the user (2026-11-09):** all four
+inputs work and stick left steers left. The direct wheel is a little twitchy; the user chose to keep
+it that way as in keeping with the original game's feel.
+Not done: analog throttle (the pad has no analog buttons in mode `0x73`), right stick look in the car.
