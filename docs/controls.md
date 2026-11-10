@@ -18,7 +18,7 @@ RAM. **Confirmed** = seen in the debugger; **inferred** = read from the code onl
    delta below is multiplied by it.
 
 Note: game code is interleaved with the Psy-Q libraries. `0x801CC...-0x801D1...` holds game routines
-(like the pad update) next to libetc/libapi, so `psyq_libs` in `decomp/germs.yaml` is not pure library.
+(like the pad update) next to libetc/libapi, so that range is not pure library code.
 
 ## Movement function `0x80199548` (confirmed it runs each frame; fields inferred from the code)
 

@@ -8,7 +8,6 @@ PS1 game SLPS-02107 (Japan only). Goals: an English fan translation with half-wi
    renderer, reinsert the text, rebuild the disc, and distribute an xdelta/PPF patch.
 2. **PC port.** Static recompilation using psxrecomp (git submodule) in its own repo. The real BIOS is
    recompiled, so the Kanji ROM font calls keep working; we supply our own half-width font.
-3. **Matching decomp** (optional, later). splat + maspsx + the original GCC version, following BFM-decomp.
 
 ## Layout
 

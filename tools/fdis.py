@@ -1,4 +1,4 @@
-"""Print one retail function with branch labels and call targets, for writing C by hand.
+"""Print one retail function with branch labels and call targets, for reading it and writing patches.
 
 Usage: python -I tools/fdis.py 0x8018C750 [words]    (default: up to the first `jr $ra` + delay slot
 that no earlier forward branch jumps past)
