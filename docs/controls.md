@@ -73,8 +73,8 @@ that runs it and then reads the sticks from the BIOS pad buffer `0x80007570` (+4
 
 All four stick axes are confirmed working in game (user playtest, 2026-11-09).
 
-Digital pads (ID `0x41`) and `[+0x46] != 0` are untouched. The Analog button turns analog mode on
-(DuckStation resets it on a state load).
+Digital pads (ID `0x41`) are untouched. The Analog button turns analog mode on
+(DuckStation resets it on a state load). `[+0x46] != 0` was skipped at first; see "Subway" below.
 
 Original controls (confirmed by the user): d-pad rotates the view (Left/Right turn, Up/Down look
 up/down), Triangle/Cross forward/back, L1/R1 strafe. Measured with the real buttons: Up stops at
@@ -104,6 +104,27 @@ called from `0x801A8880` (city, a1 = 2), `0x801942E4` (office, a1 = 0, pad word 
 through `[a0 + 0x5C]` instead of a fixed address and saves `s0`/`ra` around the call.
 Boot check, 2026-10-25: a disc built with `insert_script` + `patch_exe` + `build_disc` boots, shows the
 English intro, and hits the wrapper in the office (execute breakpoint at `0x801B1F90`, caller `0x801942EC`).
+
+## Subway: sticks with `[+0x46] = 3` (found and fixed 2026-11-09)
+
+User report: the sticks did nothing in the subway. Seen in DuckStation in a subway: the frame still
+goes through the city call (`ra = 0x801A8888`, `a1 = 2`) with the player mode `[+0x46] = 3`, and the
+wrapper skipped every non-zero mode. In that mode the retail function sends the d-pad to the look
+pair instead of pitch and yaw: Up/Down change `0x801E114C` and Left/Right `0x801E114E`, `+-dt` per
+frame (`0x801E1118 + 0x34/0x36`), and the city call multiplies both velocities by 4 (`0x801999AC`).
+Holding Up took `0x801E114C` from 0 to 1431 with no stop, so retail has no limit there.
+
+The wrapper now does the same for any non-zero mode: right stick X/Y go to `0x801E114E`/`0x801E114C`
+with the usual scaling and no clamp, and the left stick velocities get the x4 (still x10 when
+`a1 != 2`). Modes seen so far: 0 on foot, 1 car (never reaches this function), 3 subway; 2 is unknown
+and gets the same treatment as the retail d-pad gives it. Checked live by writing the new block into
+the running game and faking the right stick bytes at a breakpoint on the wrapper: the pair went
+(0, -90) to (4, -83) in one frame with `dt = 2`. Both sticks then confirmed in the subway by the user
+(2026-11-09); unit tests in `tests/test_sticks.py`.
+
+DuckStation MCP note: when the plugin is not connected to the session, the server still answers plain
+JSON-RPC over HTTP at `http://localhost:2346/mcp` (`initialize`, then `tools/call` with the
+`MCP-Session-Id` header).
 
 ## Buttons die in analog mode (found 2026-10-25, fixed)
 

@@ -31,7 +31,7 @@ class Stick(unittest.TestCase):
     def setUpClass(cls):
         cls.exe = patch_exe.apply(EXE_PATH.read_bytes())
 
-    def run_wrapper(self, pad_id=0x73, rx=0x80, ry=0x80, lx=0x80, ly=0x80, dt=3, mode=0, yaw=100, pitch=0, a1=2):
+    def run_wrapper(self, pad_id=0x73, rx=0x80, ry=0x80, lx=0x80, ly=0x80, dt=3, mode=0, yaw=100, pitch=0, a1=2, look=(0, 0)):
         uc = Uc(UC_ARCH_MIPS, UC_MODE_32 | UC_MODE_LITTLE_ENDIAN)
         uc.mem_map(P(0x80000000), 0x200000)
         uc.mem_write(P(LOAD), self.exe[0x800:])
@@ -41,6 +41,7 @@ class Stick(unittest.TestCase):
         uc.mem_write(P(PLAYER + 0x46), struct.pack("<H", mode))
         uc.mem_write(P(YAW), struct.pack("<H", yaw))
         uc.mem_write(P(PITCH), struct.pack("<h", pitch))
+        uc.mem_write(P(patch_exe.LOOK_Y), struct.pack("<hh", *look))
         self.moves = 0
 
         def hook(uc, addr, size, _):
@@ -61,6 +62,7 @@ class Stick(unittest.TestCase):
         self.s0 = uc.reg_read(R.UC_MIPS_REG_S0)
         self.s1 = uc.reg_read(R.UC_MIPS_REG_S1)
         h = lambda a: struct.unpack("<h", uc.mem_read(P(a), 2))[0]
+        self.look = (h(patch_exe.LOOK_Y), h(patch_exe.LOOK_X))
         return dict(yaw=h(YAW), pitch=h(PITCH), strafe=h(STRAFE), fwd=h(FORWARD), moving=h(MOVING))
 
     def test_calls_retail_movement_and_restores_the_stack(self):
@@ -73,7 +75,7 @@ class Stick(unittest.TestCase):
         idle = dict(yaw=100, pitch=0, strafe=0, fwd=0, moving=0)
         self.assertEqual(self.run_wrapper(), idle)
         self.assertEqual(self.run_wrapper(pad_id=0x41, rx=0xFF, ry=0, lx=0, ly=0), idle)
-        self.assertEqual(self.run_wrapper(rx=0xFF, ry=0, lx=0, ly=0, mode=1), idle)
+        self.assertEqual(self.look, (0, 0))
         near = 0x80 + 24
         self.assertEqual(self.run_wrapper(rx=near, ry=near, lx=0x80 - 24, ly=near), idle)
 
@@ -108,6 +110,31 @@ class Stick(unittest.TestCase):
         r = self.run_wrapper(lx=0xFF)
         self.assertEqual((r["strafe"], r["moving"], r["yaw"]), (((127 * 3) * 6) >> 7, 1, 100))
         self.assertEqual(self.run_wrapper(lx=0x00)["strafe"], ((-128 * 3) * 6) >> 7)
+
+    def test_subway_right_stick_moves_the_look_pair(self):
+        # +0x46 = 3: retail Up/Down and Left/Right change 0x801E114C/E, not pitch and yaw
+        r = self.run_wrapper(rx=0xFF, ry=0x00, mode=3, look=(10, -90))
+        self.assertEqual((r["yaw"], r["pitch"], r["moving"]), (100, 0, 1))
+        self.assertEqual(self.look, (10 + ((128 * 3) >> 6), -90 + ((127 * 3) >> 5)))
+        self.run_wrapper(rx=0x00, ry=0xFF, mode=3, look=(10, -90))
+        self.assertEqual(self.look, (10 - ((127 * 3) >> 6), -90 + ((-128 * 3) >> 5)))
+        self.run_wrapper(ry=0x00, mode=3, look=(1431, 0))          # retail has no limit here
+        self.assertEqual(self.look, (1431 + 6, 0))
+        self.run_wrapper(ry=0xFF, mode=3, look=(-1431, 0))
+        self.assertEqual(self.look, (-1431 - 5, 0))
+        self.run_wrapper(mode=3, look=(10, -90))                   # centred: untouched
+        self.assertEqual(self.look, (10, -90))
+        self.run_wrapper(pad_id=0x41, rx=0xFF, ry=0, mode=3, look=(10, -90))
+        self.assertEqual(self.look, (10, -90))
+
+    def test_subway_left_stick_velocities_are_x4_like_retail(self):
+        r = self.run_wrapper(ly=0x00, lx=0xFF, mode=3)
+        self.assertEqual((r["fwd"], r["strafe"], r["moving"]),
+                         ((((128 * 3) * 11) >> 7) * 4, (((127 * 3) * 6) >> 7) * 4, 1))
+        r = self.run_wrapper(ly=0xFF, lx=0x00, mode=3)
+        self.assertEqual((r["fwd"], r["strafe"]), ((((-127 * 3) * 11) >> 7) * 4, (((-128 * 3) * 6) >> 7) * 4))
+        r = self.run_wrapper(ly=0x00, lx=0xFF, mode=3, a1=0)       # not the city call: x10 as always
+        self.assertEqual((r["fwd"], r["strafe"]), ((((128 * 3) * 11) >> 7) * 10, (((127 * 3) * 6) >> 7) * 10))
 
     def test_call_site_goes_through_the_wrapper(self):
         for call in patch_exe.MOVE_CALLS:

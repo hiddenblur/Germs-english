@@ -409,8 +409,11 @@ f_done:
 #   right stick Y -> pitch (+0x6C)        like Up/Down, kept inside the game's range -25..65
 #   left stick Y  -> forward (+0x50)      like Triangle/Cross
 #   left stick X  -> strafe (+0x4E)       like L1/R1
-# Digital pads (ID 0x41) and the look-offset mode (+0x46 != 0) are left alone. The code replaces
-# GsSetFlatLight (0x801B1F90-0x801B2500), which nothing in the game calls.
+# With +0x46 != 0 (3 in the subway; 1 is the car, which never gets here) the retail d-pad changes
+# the look pair 0x801E114C (Up/Down) / 0x801E114E (Left/Right) instead of pitch and yaw, with no
+# limits, and the city call multiplies the velocities by 4; the right stick and the left stick do
+# the same. Digital pads (ID 0x41) are left alone. The code replaces GsSetFlatLight
+# (0x801B1F90-0x801B2500), which nothing in the game calls.
 MOVE = 0x80199548
 MOVE_CALLS = [0x801A8880, 0x801942E4, 0x8017DF7C]   # city (a1 = 2), office (0), a1 = 1
 STICK_BLOCK, STICK_BLOCK_END = 0x801B1F90, 0x801B2500
@@ -418,6 +421,7 @@ STICK_DEADZONE = 24             # raw stick units around the centre that are ign
 STICK_YAW_SHIFT = 5             # yaw += stick * dt >> 5 (the pad adds dt per frame)
 STICK_PITCH_SHIFT = 6
 PITCH_MIN, PITCH_MAX = -25, 65  # where the Up/Down buttons stop
+LOOK_Y, LOOK_X = 0x801E114C, 0x801E114E   # the view while +0x46 != 0
 STICK_RUN, STICK_STRAFE = 11, 6  # velocity at full deflection = n * dt (pad: walk 4, run 11, strafe 6)
 
 
@@ -452,20 +456,24 @@ STICK_WRAPPER = f"""
     nop
     beq   $t1, $zero, k_done
     nop
-    lhu   $t2, 0x46($t1)
-    nop
-    bne   $t2, $zero, k_done        # look-offset mode
+    lhu   $t2, 0x46($t1)            # 0 = on foot; 3 = subway: the view is the look pair instead
+    addiu $t8, $t1, 0x6E            # where Left/Right go: yaw
+    addiu $t9, $t1, 0x6C            # where Up/Down go: pitch
+    beq   $t2, $zero, k_view
     lui   $t3, 0x801E
+    ori   $t8, $t3, {LOOK_X & 0xFFFF:#x}
+    ori   $t9, $t3, {LOOK_Y & 0xFFFF:#x}
+k_view:
     lw    $t3, 0x6DB4($t3)          # time step
     nop
 {stick(4, "k_ry")}
     mult  $t4, $t3
     mflo  $t5
     sra   $t5, $t5, {STICK_YAW_SHIFT}
-    lhu   $t6, 0x6E($t1)
+    lhu   $t6, 0($t8)
     nop
     addu  $t6, $t6, $t5             # stick right = Right button: yaw up
-    sh    $t6, 0x6E($t1)
+    sh    $t6, 0($t8)
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)            # "moving this frame": the view only updates with it set
 k_ry:
@@ -473,9 +481,10 @@ k_ry:
     mult  $t4, $t3
     mflo  $t5
     sra   $t5, $t5, {STICK_PITCH_SHIFT}
-    lh    $t6, 0x6C($t1)
+    lh    $t6, 0($t9)
     nop
     subu  $t6, $t6, $t5             # stick up = Up button: pitch up
+    bne   $t2, $zero, k_pmin        # the look pair has no limits in retail
     slti  $t7, $t6, {PITCH_MAX + 1}
     bne   $t7, $zero, k_pmax
     nop
@@ -486,7 +495,7 @@ k_pmax:
     nop
     addiu $t6, $zero, {PITCH_MIN}
 k_pmin:
-    sh    $t6, 0x6C($t1)
+    sh    $t6, 0($t9)
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)
 k_ly:
@@ -499,12 +508,17 @@ k_ly:
     mflo  $t5
     sra   $t5, $t5, 7
     addiu $t7, $zero, 2
-    beq   $s1, $t7, k_f10
+    bne   $s1, $t7, k_f10
     nop
+    beq   $t2, $zero, k_fset
+    nop
+    j     k_fset
+    sll   $t5, $t5, 2               # retail: city call with +0x46 != 0, x4 (0x801999AC)
+k_f10:
     sll   $t7, $t5, 2
     addu  $t5, $t7, $t5
     sll   $t5, $t5, 1               # retail: outside the city velocities are x10 (0x801999C8)
-k_f10:
+k_fset:
     sh    $t5, 0x50($t1)
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)            # "moving this frame"
@@ -517,12 +531,17 @@ k_lx:
     mflo  $t5
     sra   $t5, $t5, 7
     addiu $t7, $zero, 2
-    beq   $s1, $t7, k_s10
+    bne   $s1, $t7, k_s10
     nop
+    beq   $t2, $zero, k_sset
+    nop
+    j     k_sset
+    sll   $t5, $t5, 2               # retail: city call with +0x46 != 0, x4 (0x801999AC)
+k_s10:
     sll   $t7, $t5, 2
     addu  $t5, $t7, $t5
     sll   $t5, $t5, 1               # retail: outside the city velocities are x10 (0x801999C8)
-k_s10:
+k_sset:
     sh    $t5, 0x4E($t1)          # stick right = R1: positive
     addiu $t6, $zero, 1
     sh    $t6, 0x3C($t1)
