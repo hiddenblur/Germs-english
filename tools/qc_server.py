@@ -141,8 +141,6 @@ class Review:
         try:
             raw = insert_script.prepare(entry, en, half)
             if entry["cmd"] is None:
-                if sid in layout.TIMED:
-                    raw += layout.TIMED_MARKER
                 if len(raw) + 1 > entry["capacity"]:
                     raise ValueError(f"{len(raw) + 1} bytes, but only {entry['capacity']} fit in place")
         except ValueError as err:

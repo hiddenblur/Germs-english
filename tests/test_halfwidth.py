@@ -245,25 +245,102 @@ class TypewriterSpeed(RendererTests):
         m.call(self.wrapper(), 0)
         self.assertEqual(len(m.uploads), 2)
 
-    def test_marked_narration_keeps_retail_pace(self):
-        m = Machine(self.patched)
-        text = bytes([0xC1]) * 10
-        m.start_typewriter(text)
-        m.uc.mem_write(P(STRING + len(text) + 1), bytes([0xFE, 0xFF]))
-        m.call(self.wrapper(), 0)
-        self.assertEqual(len(m.uploads), 1)
-
-    def test_retail_narration_length_keeps_retail_pace(self):
+    def test_retail_narration_length_is_fast_too(self):
+        import patch_exe
         m = Machine(self.patched)
         m.start_typewriter(bytes([0xC1]) * 567)            # length of the retail opening
         m.call(self.wrapper(), 0)
-        self.assertEqual(len(m.uploads), 1)
+        self.assertEqual(len(m.uploads), patch_exe.TYPEWRITER_SPEED)
 
     def test_callers_use_the_wrapper(self):
         import patch_exe
         for a in patch_exe.TYPEWRITER_CALLERS:
             off = a - LOAD + 0x800
             self.assertEqual(self.patched[off:off + 4], patch_exe.asm(f"jal {self.wrapper():#x}", a))
+
+
+class NarrationPace(RendererTests):
+    """The opening/ending task types one glyph per tick, on a shorter period than retail."""
+
+    def word(self, addr):
+        off = addr - LOAD + 0x800
+        return self.patched[off:off + 4]
+
+    def test_narration_calls_stay_on_the_plain_typewriter(self):
+        import patch_exe
+        for a in (0x80183E40, 0x801843EC):
+            self.assertNotIn(a, patch_exe.TYPEWRITER_CALLERS)
+            self.assertEqual(self.word(a), self.retail[a - LOAD + 0x800:a - LOAD + 0x804])
+
+    def test_task_period_is_shortened(self):
+        import patch_exe
+        at = patch_exe.NARRATION_PERIOD_AT
+        self.assertEqual(self.word(at), patch_exe.asm(f"addiu $v0, $zero, {patch_exe.NARRATION_PERIOD}", at))
+        self.assertLess(patch_exe.NARRATION_PERIOD, 10)
+
+
+class NarrationCues(RendererTests):
+    """0x80184434: the opening/ending scene cues keyed to the typewriter index."""
+    CUES, TASK, FADE, CUE_538 = 0x80184434, 0x801E05B0, 0x80186128, 0x801A3CC0
+
+    def run_cues(self, exe, scene, indices):
+        """Call the routine once per index, like the scene loop; return the cues fired."""
+        m, fired = Machine(exe), []
+        uc = m.uc
+        uc.mem_write(P(self.TASK), struct.pack("<i", 0))               # narration task alive
+        uc.mem_write(P(GP + 0x224), bytes(4))                          # one-shot flags
+        names = {self.FADE: "fade", self.CUE_538: "cue538"}
+
+        def hook(uc, addr, size, _):
+            if addr in names:
+                fired.append((names[addr], m.g(0x220)))
+                uc.reg_write(R.UC_MIPS_REG_PC, uc.reg_read(R.UC_MIPS_REG_RA))
+        uc.hook_add(UC_HOOK_CODE, hook)
+        for i in indices:
+            uc.mem_write(P(GP + 0x220), struct.pack("<h", i))
+            uc.reg_write(R.UC_MIPS_REG_V1, 0x801E0340)                 # stale v1, as in game
+            uc.reg_write(R.UC_MIPS_REG_GP, GP)
+            uc.reg_write(R.UC_MIPS_REG_SP, 0x801FF000)
+            uc.reg_write(R.UC_MIPS_REG_RA, SENTINEL)
+            uc.reg_write(R.UC_MIPS_REG_A0, scene)
+            uc.emu_start(self.CUES, SENTINEL, count=1000)
+        return fired
+
+    def test_retail_pace_matches_retail(self):
+        for scene in (0, 1):
+            steps = range(0, 567)
+            self.assertEqual(self.run_cues(self.patched, scene, steps),
+                             self.run_cues(self.retail, scene, steps))
+
+    def test_retail_misses_cues_when_the_index_skips(self):
+        self.assertEqual(self.run_cues(self.retail, 0, range(2, 567, 3)), [])    # the hang
+
+    def test_opening_cues_fire_once_at_any_pace(self):
+        for step in (1, 2, 3, 6):
+            fired = self.run_cues(self.patched, 0, range(step - 1, 560, step))
+            self.assertEqual([n for n, _ in fired], ["fade", "cue538"], step)
+            self.assertTrue(426 <= fired[0][1] < 426 + step and 538 <= fired[1][1] < 538 + step)
+
+    def test_ending_cue_fires_once_at_any_pace(self):
+        for step in (1, 2, 3, 6):
+            fired = self.run_cues(self.patched, 1, range(step - 1, 495, step))
+            self.assertEqual([n for n, _ in fired], ["fade"], step)
+            self.assertTrue(386 <= fired[0][1] < 386 + step)
+
+    def test_nothing_fires_without_a_narration_task(self):
+        m_fired = []
+        for exe in (self.patched,):
+            m = Machine(exe)
+            m.uc.mem_write(P(self.TASK), struct.pack("<i", -1))
+            m.uc.mem_write(P(GP + 0x220), struct.pack("<h", 500))
+            m.uc.hook_add(UC_HOOK_CODE, lambda uc, addr, size, _: m_fired.append(addr)
+                          if addr in (self.FADE, self.CUE_538) else None)
+            m.uc.reg_write(R.UC_MIPS_REG_A0, 0)
+            m.uc.reg_write(R.UC_MIPS_REG_GP, GP)
+            m.uc.reg_write(R.UC_MIPS_REG_SP, 0x801FF000)
+            m.uc.reg_write(R.UC_MIPS_REG_RA, SENTINEL)
+            m.uc.emu_start(self.CUES, SENTINEL, count=1000)
+        self.assertEqual(m_fired, [])
 
 
 class MenuRenderer(RendererTests):

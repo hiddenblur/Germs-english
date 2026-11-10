@@ -160,20 +160,20 @@ NARRATION_DRAW = glyph_routine(
     sh    $t1, 0x220($gp)""")
 
 # Typewriter speed. English has about twice the glyphs of the Japanese, so one glyph per
-# frame was too slow. Callers of 0x80182860 go through this wrapper instead. It draws up to
+# call was too slow. Callers of 0x80182860 go through this wrapper instead. It draws up to
 # TYPEWRITER_SPEED glyphs per call and stops as soon as the typewriter returns non-zero
 # (page full, string done). It lives in the free tail of the narration block.
-#
-# Timed narration: the opening runs alongside a timer that brings in the office. If the
-# text finishes early, the office never loads (the same hang as a too-short translation).
-# Such strings keep the retail pace: the inserter writes the marker FE FF right after their
-# terminator (layout.TIMED), and the retail Japanese ones are recognised by length.
+# The opening and ending narration are typed by a task that calls every 10 vblanks, and
+# their scene cues are keyed to the typewriter index: see NARRATION_CUES below.
 TYPEWRITER = 0x80182860
 TYPEWRITER_SPEED = 3
 NARRATION_BLOCK = 0x801829DC
-TYPEWRITER_CALLERS = [0x80183588, 0x80183C18, 0x80183E40, 0x801842C0, 0x801843EC]
-TIMED_MARKER = (0xFE, 0xFF)
-RETAIL_TIMED_LENGTHS = (567, 495)        # SCE.S:59008 opening, SCE.S:59808 ending
+TYPEWRITER_CALLERS = [0x80183588, 0x80183C18, 0x801842C0]
+# The opening/ending narration task (0x80183CFC creates it, tick 0x80184338) is NOT routed
+# through the wrapper: it types one glyph per tick (its calls at 0x80183E40 and 0x801843EC stay
+# retail) and only its tick period changes. Three glyphs per 10 vblanks looked choppy.
+NARRATION_PERIOD = 4                      # vblanks per glyph (retail 10)
+NARRATION_PERIOD_AT = 0x80183D5C          # addiu $v0, $zero, 0xa ; sw $v0, 0x2c($s1)
 WRAPPER = f"""
     addiu $sp, $sp, -32
     sw    $ra, 28($sp)
@@ -182,28 +182,13 @@ WRAPPER = f"""
     sw    $s2, 16($sp)
     or    $s1, $a0, $zero
     or    $s2, $a1, $zero
-    addiu $s0, $zero, 1             # timed narration: retail pace, no skipping
-    lh    $t3, 0x21E($gp)           # string length
-    addiu $t7, $zero, {RETAIL_TIMED_LENGTHS[0]}
-    beq   $t3, $t7, w_loop
-    addiu $t7, $zero, {RETAIL_TIMED_LENGTHS[1]}
-    beq   $t3, $t7, w_loop
-    addu  $t4, $s1, $t3
-    lbu   $t5, 1($t4)               # bytes after the terminator
-    lbu   $t6, 2($t4)
-    addiu $t7, $zero, {TIMED_MARKER[0]}
-    bne   $t5, $t7, w_fast
-    addiu $t7, $zero, {TIMED_MARKER[1]}
-    beq   $t6, $t7, w_loop
-    nop
-w_fast:
     addiu $s0, $zero, {TYPEWRITER_SPEED}
 w_loop:
     or    $a0, $s1, $zero
     jal   {TYPEWRITER:#x}
     or    $a1, $s2, $zero
     addiu $s0, $s0, -1
-    bne   $v0, $zero, w_done        # page full or string done: stop for this frame
+    bne   $v0, $zero, w_done        # page full or string done: stop for this call
     nop
     bne   $s0, $zero, w_loop
     nop
@@ -214,6 +199,37 @@ w_done:
     lw    $s2, 16($sp)
     jr    $ra
     addiu $sp, $sp, 32
+"""
+
+# Narration cues 0x80184434(a0), called once per frame by the opening/ending scene loop
+# (0x80194990) while the narration task is alive. Retail fires each cue when the typewriter
+# index (gp+0x220) EQUALS a fixed value: opening (a0 = 0) 426 = fade the office in,
+# 538 = 0x801A3CC0(3); ending (a0 = 1) 386 = fade. Each is one-shot (flags gp+0x224,
+# gp+0x226). Typing several glyphs per call steps over the exact value, the cue never
+# fires and the game sits on a black screen. Fire on index >= value instead.
+# v1 is loaded right before, so the instruction in its load-delay slot must not read it.
+NARRATION_CUES = 0x80184434
+CUE_FADE, CUE_FADE_CALL, CUE_EXIT = 0x801844A4, 0x801844B4, 0x801844C4
+
+
+def bnez_v0(at, target):
+    """`bne $v0, $zero, target` at address `at`, as a .word: keystone rejects a branch to an
+    absolute kseg0 address."""
+    return f".word {0x14400000 | (((target - (at + 4)) >> 2) & 0xFFFF):#x}"
+
+
+CUES_OPENING_1 = """
+    nop                             # load delay of lh $v1, 0x220($gp)
+    slti  $v0, $v1, 0x1AA
+"""
+CUES_OPENING_2 = f"""
+    {bnez_v0(0x80184460, CUE_EXIT)}                # index < 426: nothing yet
+    slti  $v0, $v1, 0x21A
+    {bnez_v0(0x80184468, CUE_FADE)}                # 426..537: fade (once); >= 538 falls through
+"""                                 # delay slot: retail lh $v0, 0x226($gp), harmless
+CUES_ENDING = f"""
+    slt   $v0, $v1, $v0             # v0 = 386 from the delay slot at 0x80184450
+    {bnez_v0(0x801844A0, CUE_EXIT)}                # delay slot: retail lh $v0, 0x224($gp), harmless
 """
 
 
@@ -686,7 +702,14 @@ PATCHES = [
     (PAD_READ_CALL, PAD_READ_CALL + 4, f"jal {BIOS_PAD:#x}", f"jal {PAD_FIX:#x}"),
     (DRIVE_CALL, DRIVE_CALL + 4, f"jal {DRIVE:#x}", f"jal {DRIVE_FIX:#x}"),
 ] + [(a, a + 4, f"jal {MOVE:#x}", f"jal {STICK_BLOCK:#x}") for a in MOVE_CALLS] + [
-] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS]
+] + [(a, a + 4, f"jal {TYPEWRITER:#x}", f"jal {TYPEWRITER_WRAPPER:#x}") for a in TYPEWRITER_CALLERS] + [
+    (NARRATION_PERIOD_AT, NARRATION_PERIOD_AT + 4, "addiu $v0, $zero, 0xa",
+     f"addiu $v0, $zero, {NARRATION_PERIOD}"),
+    # narration cues: index >= value instead of ==
+    (0x80184458, 0x80184460, "addiu $v0, $zero, 0x1aa", CUES_OPENING_1),
+    (0x80184460, 0x8018446C, "addiu $v0, $zero, 0x21a", CUES_OPENING_2),
+    (0x8018449C, 0x801844A4, ".word 0x14620009", CUES_ENDING),   # bne $v1, $v0, 0x801844C4
+]
 
 
 def apply(exe):

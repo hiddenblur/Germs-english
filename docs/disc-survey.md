@@ -122,18 +122,50 @@ the page origin (x, y).
 | `0x80182D34` | 4-line panel (caller `0x80183778`: three struct strings + one sprintf line). Lines 0-1 centred, lines 2+ start at col 1 and wrap at 15. Line y from the table at `0x801D76A4` (3, 21, 39, 57, 74, 91). Composites onto the background via StoreImage `0x801B0694` | `s2` col, `s5` line, `s7` line y, `s3` index, `s6` window | **patched**, emulator-tested only (screen not found yet) |
 | `0x8018C864` | weapon names: the RES.R `WEPN` record's name (`+4`), seen on the attack analysis screen (caller `0x8018CD10`, list rows 0x11 apart). Each Kanji ROM glyph is squashed to an 8x15 cell (2 source pixels -> 1: both set 2, both clear `0xE`, mixed `0xA`); always 12 cells, blanks filled with `0xEE` | `s4` record, `s2` byte index, rect at `0x10(sp)` | **patched** (one cell per half-width byte, 12 cells), emulator-tested only |
 
-## Typewriter speed and the timed opening
+## Typewriter speed and the opening/ending narration cues
 
-- The text command handler (state machine around `0x80183800`) calls the typewriter once per frame.
-  On a non-zero return (page full or string done) it waits on the `gp+0x222` timer, and when a page
-  is full (`row == 3`) it clears the window and continues. Nothing counts pages.
-- The office fade-in during the opening runs on **its own timer**. If the opening text finishes
-  before then, the office never loads. That caused both the short-translation hang and a hang with
-  faster typing. The "15 rows" rule is just how much text the retail pace covers in that time.
-- `tools/patch_exe.py` redirects all 5 typewriter calls to a wrapper (after the narration glyph
-  routine). It draws 3 glyphs per frame (confirmed to feel right in game). Timed narration keeps
-  the retail pace: strings followed by the marker `FE FF` after their terminator (written by the
-  inserter for `layout.TIMED`), or the retail opening/ending recognised by length (567, 495).
+- The text command handler (state machine at `0x801837F0`, state in `(*cmd)+2`: 0 init, 3 typing,
+  4 page wait) calls the typewriter once per frame. On a non-zero return (page full) it waits on the
+  `gp+0x222` timer, and when a page is full (`row == 3`) it clears the window and continues.
+  `0x801749E8` re-queues the command on the list at `gp+0x1FC` so it runs again.
+- **The opening and ending narration use a different path** (confirmed live, 2026-11-09). The scene
+  function `0x80194780` (scene id at `0x801E0356`: 1 = opening, 2 = ending) starts them with
+  `0x80183CFC(string)`. That creates a task (`0x801D15C8`): period 10 vblanks (`+0x2C`), tick
+  `0x80184338` (one typewriter call with `a1 = 0`, no page prompt; after a full page it skips one
+  tick via `gp+0x8E`), progress `+0x24` = typewriter index, end `+0x26` = string length, end callback
+  `0x80184408`. The task handle is kept at `0x801E05B0` (-1 when no narration runs). Ticks are
+  type-2 events handled inside the event getter `0x801CC378`, which the scene loop calls each frame.
+- **Scene cues are keyed to the typewriter index.** Each frame the scene loop calls
+  `0x80184434(scene - 1)` (from `0x80194990`). While the task is alive it compares `gp+0x220` with
+  fixed values, each cue one-shot:
+  | Scene | Index | Action | Flag |
+  |---|---|---|---|
+  | opening | 426 (`0x1AA`) | `0x80186128(0, 3)`: fades the office in | `gp+0x224` |
+  | opening | 538 (`0x21A`) | `0x801A3CC0(3)` (purpose unconfirmed, probably sound) | `gp+0x226` |
+  | ending | 386 (`0x182`) | `0x80186128(0, 3)` | `gp+0x224` |
+
+  Retail tests for **equality**. That is why the office "never loads" when the index steps over 426
+  (typing more than one glyph per tick) or never reaches it (a translation shorter than 426 bytes):
+  the fade never starts and the game stays black after the text ends. It is not a timer. The index
+  counts bytes of the string, so in English the cues come at byte 426/538, wherever that falls on
+  screen.
+- **Narration pace (2026-11-09):** 3 glyphs per 10-vblank tick looked choppy, so the narration task is
+  off the wrapper: its two typewriter calls (`0x80183E40`, `0x801843EC`) stay retail (one glyph per tick)
+  and `NARRATION_PERIOD` (`+0x2C` of the task, set at `0x80183D5C`, retail 10) is 4. Measured live: about
+  one glyph per 4.8 vblanks (the loop runs every 3 vblanks, so the period rounds up to frame ticks), 12.6
+  glyphs/s, against 6/s retail and 18/s with the wrapper. Period 3 would give 20/s.
+- `tools/patch_exe.py` redirects the other 3 typewriter calls (`0x80183588`, `0x80183C18`, `0x801842C0`:
+  ordinary dialogue) to a wrapper (after the narration glyph
+  routine) that draws 3 glyphs per call. The cue tests are patched to
+  `index >= value` (`NARRATION_CUES`), so they fire at any pace. Watch the load-delay slot after
+  `lh $v1, 0x220($gp)` there. The old "timed" marker (`FE FF` after the terminator) and the
+  length test for the retail strings are gone.
+- **Confirmed in emulator (2026-11-09, disc "English 6 (fast opening)"):** the English opening types
+  at 3 units per 10 vblanks (about 31 s instead of 100 s), the fade starts at index 428, both cues
+  fire, and the game reaches the desk prompt. The ending cue patch is covered by the unicorn test
+  only; the ending has not been played.
+- A translation of the opening shorter than 426 bytes (ending: 386) would still never fade.
+  Unpatched; the scene-split rule in `tools/layout.py` keeps the opening long enough in practice.
 - Circle to finish or advance a page: tried (wrapper reading the raw pad buffer) but it didn't work
   in game, and retail never supported it. Removed for now. Pages advance on the `gp+0x222` timer;
   that's the place to look if this is picked up again.
@@ -214,8 +246,9 @@ run the retail and patched code on the same Japanese strings and require identic
   15 rows (5 pages) on a black screen, loads the office and keeps typing the same string in the office
   window. The retail text breaks exactly there. A translation that ends inside the first 15 rows hangs
   the game with an error sound when the office loads (bisected: the EXE patch and the menu rebuild were
-  fine). `tools/layout.py` simulates the window and the inserter rejects such text. The code that counts
-  the pages hasn't been found yet. The ending narration `SCE.S:59808` (17 rows) may be split the same
+  fine). `tools/layout.py` simulates the window and the inserter rejects such text. Nothing counts
+  pages: the office fade is a cue at typewriter index 426 (see "Typewriter speed and the
+  opening/ending narration cues"). The ending narration `SCE.S:59808` (17 rows) may be split the same
   way; unchecked.
 - **Known limit:** a full-width character starting at half-column 31 overflows the page by 8 px.
   Translated text shouldn't mix full-width characters in, so this is only an edge case.
