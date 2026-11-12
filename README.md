@@ -1,6 +1,6 @@
 # Germs: Nerawareta Machi: English translation patch
 
-An unofficial fan translation of *Germs: Nerawareta Machi* (PlayStation, SLPS-02107, Japan only),
+An unofficial fan translation of *Germs: Nerawareta Machi(ジャーム～狙われた街～)* (PlayStation, SLPS-02107, Japan only),
 with an added **twin-stick control mod** for analog controllers.
 
 This project does **not** contain the game. It is an xdelta3 patch that you apply to your own
